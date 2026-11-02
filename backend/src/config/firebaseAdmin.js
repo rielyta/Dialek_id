@@ -1,7 +1,10 @@
-const admin = require("firebase-admin");
+const { initializeApp, getApps, cert } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { getFirestore } = require("firebase-admin/firestore");
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+
 const privateKey = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
 
 if (!projectId || !clientEmail || !privateKey) {
@@ -11,17 +14,13 @@ if (!projectId || !clientEmail || !privateKey) {
   );
 }
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId,
-      clientEmail,
-      privateKey,
-    }),
-  });
-}
+const app = getApps().length
+  ? getApps()[0]
+  : initializeApp({
+      credential: cert({ projectId, clientEmail, privateKey }),
+    });
 
-const auth = admin.auth();
-const db = admin.firestore();
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-module.exports = { admin, auth, db };
+module.exports = { auth, db };
