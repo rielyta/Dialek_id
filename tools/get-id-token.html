@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Dialek.id - Ambil ID Token (buat testing API)</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+  h1 { font-size: 18px; }
+  label { display: block; margin-top: 12px; font-weight: bold; font-size: 13px; }
+  input, textarea { width: 100%; padding: 8px; font-size: 13px; box-sizing: border-box; margin-top: 4px; }
+  textarea { height: 90px; font-family: monospace; font-size: 11px; }
+  button { margin-top: 14px; padding: 8px 16px; cursor: pointer; }
+  .hasil { margin-top: 20px; padding: 12px; background: #f0f0f0; border-radius: 6px; }
+  .error { color: #b00020; white-space: pre-wrap; }
+  .ok { color: #1a7a1a; }
+</style>
+</head>
+<body>
+
+<h1>Dialek.id - Ambil Firebase ID Token</h1>
+<p>Halaman ini cuma buat testing endpoint backend (bukan bagian dari aplikasi Dialek.id). Isi config Firebase dulu, lalu login/register, ID Token-nya muncul di bawah untuk dipakai di Postman/Thunder Client.</p>
+
+<fieldset>
+  <legend>1. Firebase Config (dari Firebase Console &gt; Project Settings &gt; General &gt; Your apps)</legend>
+  <label>apiKey</label>
+  <input id="apiKey" placeholder="AIzaSy..." />
+  <label>authDomain</label>
+  <input id="authDomain" placeholder="dialek-id-xxxxx.firebaseapp.com" />
+  <label>projectId</label>
+  <input id="projectId" placeholder="dialek-id-xxxxx" />
+</fieldset>
+
+<fieldset style="margin-top:16px;">
+  <legend>2. Login / Register (email &amp; password)</legend>
+  <label>Email</label>
+  <input id="email" type="email" placeholder="test@dialek.id" />
+  <label>Password</label>
+  <input id="password" type="password" placeholder="minimal 6 karakter" />
+  <button onclick="register()">Register (akun baru)</button>
+  <button onclick="login()">Login (akun sudah ada)</button>
+</fieldset>
+
+<div class="hasil">
+  <strong>UID:</strong> <span id="uid">-</span><br/>
+  <strong>ID Token:</strong>
+  <textarea id="token" readonly placeholder="Token akan muncul di sini setelah login/register berhasil..."></textarea>
+  <div id="status"></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+  function getConfig() {
+    return {
+      apiKey: document.getElementById("apiKey").value.trim(),
+      authDomain: document.getElementById("authDomain").value.trim(),
+      projectId: document.getElementById("projectId").value.trim(),
+    };
+  }
+
+  function showStatus(msg, isError) {
+    const el = document.getElementById("status");
+    el.textContent = msg;
+    el.className = isError ? "error" : "ok";
+  }
+
+  async function doAuth(action) {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!document.getElementById("apiKey").value.trim()) {
+      showStatus("Isi Firebase Config dulu (apiKey, authDomain, projectId).", true);
+      return;
+    }
+    if (!email || !password) {
+      showStatus("Isi email dan password dulu.", true);
+      return;
+    }
+
+    try {
+      const app = initializeApp(getConfig());
+      const auth = getAuth(app);
+      const cred =
+        action === "register"
+          ? await createUserWithEmailAndPassword(auth, email, password)
+          : await signInWithEmailAndPassword(auth, email, password);
+
+      const token = await cred.user.getIdToken();
+      document.getElementById("uid").textContent = cred.user.uid;
+      document.getElementById("token").value = token;
+      showStatus(
+        (action === "register" ? "Akun baru berhasil dibuat" : "Login berhasil") +
+          ". Copy token di atas, pakai sebagai: Authorization: Bearer <token>",
+        false
+      );
+      console.log("UID:", cred.user.uid);
+      console.log("ID Token:", token);
+    } catch (err) {
+      showStatus("Gagal: " + err.code + " - " + err.message, true);
+      console.error(err);
+    }
+  }
+
+  window.register = () => doAuth("register");
+  window.login = () => doAuth("login");
+</script>
+
+</body>
+</html>
