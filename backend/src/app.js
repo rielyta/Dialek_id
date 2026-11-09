@@ -13,6 +13,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/akun", require("./routes/akunRoutes"));
+app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 
 app.use((req, res) => {
   res.status(404).json({ error: "Not Found", message: `Endpoint ${req.method} ${req.originalUrl} tidak ada.` });

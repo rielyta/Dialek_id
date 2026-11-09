@@ -60,6 +60,13 @@ async function updateAkun(req, res) {
     }
 
     const docRef = db.collection("Users").doc(uid);
+
+    const existing = await docRef.get();
+    if (!existing.exists) {
+      dataUpdate.email = req.user.email || null;
+      dataUpdate.tanggalBergabung = new Date().toISOString();
+    }
+
     await docRef.set(dataUpdate, { merge: true });
 
     const docUpdated = await docRef.get();
