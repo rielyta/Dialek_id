@@ -18,9 +18,11 @@ Base URL (lokal): `http://localhost:3000`
   - `200 OK`, `201 Created`
   - `400 Bad Request` - input tidak valid
   - `401 Unauthorized` - token tidak ada atau tidak valid
+  - `403 Forbidden` - aksi belum diizinkan (contoh: rating sebelum mengerjakan latihan)
   - `404 Not Found` - data atau endpoint tidak ditemukan
   - `409 Conflict` - data sudah ada atau bentrok (username, email)
   - `500 Internal Server Error`
+  - `503 Service Unavailable` - layanan pendukung tidak merespons (Fuzzy Match Engine)
 
 ---
 
