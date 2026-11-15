@@ -380,3 +380,150 @@ Ringkasan skor pengguna pada Latihan Susun Kosakata.
   }
 }
 ```
+
+---
+
+## POST /api/permainan/mulai
+
+Mulai sesi permainan Sambung Kata (FR-14, UC-14). Sistem memilih kata awal acak dari koleksi `Kosakata` dan membuat sesi di `Permainan/{sesiId}`.
+
+**Auth:** wajib
+
+**Request:** tanpa body
+
+**Response 201:**
+```json
+{
+  "data": {
+    "sesiId": "abc123",
+    "status": "berjalan",
+    "skor": 0,
+    "jumlahKata": 1,
+    "kataTerpakai": ["horas"],
+    "kataTerakhir": "horas",
+    "hurufBerikutnya": "s",
+    "alasanSelesai": null,
+    "waktuMulai": "2026-11-16T03:00:00.000Z",
+    "waktuSelesai": null,
+    "kataAwal": "horas"
+  }
+}
+```
+
+**Response 500:** data kosakata belum tersedia.
+
+---
+
+## POST /api/permainan/:sesiId/jawaban
+
+Kirim kata sambungan. Kata harus diawali huruf terakhir kata sebelumnya, ada di koleksi `Kosakata`, dan belum dipakai pada sesi yang sama. Huruf besar atau kecil dan spasi berlebih diabaikan. Validasi dan skor dihitung di server.
+
+- Kata valid: skor bertambah 10, lalu sistem menyambung dengan `kataSistem`.
+- Kata tidak valid: sesi berakhir, skor akhir disimpan, dan `Leaderboard/{uid}` diperbarui bila skornya melampaui skor tertinggi pemain (UC-14 alur A1).
+
+**Auth:** wajib
+
+**Request:**
+```json
+{ "kata": "sada" }
+```
+
+**Response 200 (kata valid):**
+```json
+{
+  "data": {
+    "valid": true,
+    "alasan": null,
+    "kataSistem": "aek",
+    "rekorBaru": false,
+    "sesi": {
+      "sesiId": "abc123",
+      "status": "berjalan",
+      "skor": 10,
+      "jumlahKata": 3,
+      "kataTerpakai": ["horas", "sada", "aek"],
+      "kataTerakhir": "aek",
+      "hurufBerikutnya": "k",
+      "alasanSelesai": null,
+      "waktuMulai": "2026-11-16T03:00:00.000Z",
+      "waktuSelesai": null
+    }
+  }
+}
+```
+
+**Response 200 (kata tidak valid, sesi berakhir):**
+```json
+{
+  "data": {
+    "valid": false,
+    "alasan": "tidak_sesuai_aturan_sambung",
+    "kataSistem": null,
+    "rekorBaru": true,
+    "sesi": {
+      "sesiId": "abc123",
+      "status": "selesai",
+      "skor": 10,
+      "jumlahKata": 3,
+      "kataTerpakai": ["horas", "sada", "aek"],
+      "kataTerakhir": "aek",
+      "hurufBerikutnya": "k",
+      "alasanSelesai": "tidak_sesuai_aturan_sambung",
+      "waktuMulai": "2026-11-16T03:00:00.000Z",
+      "waktuSelesai": "2026-11-16T03:01:00.000Z"
+    }
+  }
+}
+```
+
+Nilai `alasan` saat `valid` bernilai false:
+- `tidak_sesuai_aturan_sambung`: huruf awal kata bukan huruf terakhir kata sebelumnya.
+- `sudah_dipakai`: kata sudah dipakai pada sesi ini.
+- `tidak_ada_di_kosakata`: kata tidak ditemukan di koleksi `Kosakata`.
+
+Jika sistem tidak punya kata lanjutan lagi, `valid` bernilai true, `kataSistem` bernilai `null`, dan sesi selesai dengan `alasanSelesai` berisi `sistem_kehabisan_kata`.
+
+**Response 400:** `kata` kosong, bukan teks, atau lebih dari 50 karakter.
+
+**Response 403:** sesi bukan milik pengguna.
+
+**Response 404:** sesi tidak ditemukan.
+
+**Response 409:** sesi sudah berakhir.
+
+---
+
+## POST /api/permainan/:sesiId/akhiri
+
+Akhiri sesi atas permintaan pemain. Skor akhir disimpan dan `Leaderboard/{uid}` diperbarui bila skornya melampaui skor tertinggi pemain.
+
+**Auth:** wajib
+
+**Request:** tanpa body
+
+**Response 200:**
+```json
+{
+  "data": {
+    "rekorBaru": true,
+    "sesi": {
+      "sesiId": "abc123",
+      "status": "selesai",
+      "skor": 30,
+      "jumlahKata": 7,
+      "kataTerpakai": ["horas", "sada", "aek", "kata", "asa", "anak", "kapal"],
+      "kataTerakhir": "kapal",
+      "hurufBerikutnya": "l",
+      "alasanSelesai": "dihentikan_pemain",
+      "waktuMulai": "2026-11-16T03:00:00.000Z",
+      "waktuSelesai": "2026-11-16T03:02:00.000Z"
+    }
+  }
+}
+```
+
+**Response 403:** sesi bukan milik pengguna.
+
+**Response 404:** sesi tidak ditemukan.
+
+**Response 409:** sesi sudah berakhir.
