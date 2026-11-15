@@ -16,6 +16,7 @@ app.use("/api/akun", require("./routes/akunRoutes"));
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/materi", require("./routes/materiRoutes"));
 app.use("/api/susun-kosakata", require("./routes/susunKosakataRoutes"));
+app.use("/api/forum", require("./routes/forumRoutes"));
 
 app.use((req, res) => {
   res.status(404).json({ error: "Not Found", message: `Endpoint ${req.method} ${req.originalUrl} tidak ada.` });
