@@ -5,7 +5,7 @@ import {
   updateProfile,
   signOut,
 } from "firebase/auth";
-import { auth, googleProvider, facebookProvider } from "./firebase";
+import { auth, googleProvider, } from "./firebase";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
