@@ -380,6 +380,7 @@ Ringkasan skor pengguna pada Latihan Susun Kosakata.
   }
 }
 ```
+
 ## Chatbot
 
 Semua endpoint membutuhkan header `Authorization: Bearer <ID token Firebase>`.
@@ -400,3 +401,47 @@ Galat: 400 (pesan kosong, terlalu panjang, atau konteks tidak valid), 401 (tanpa
 Riwayat percakapan milik pengguna, urut dari yang paling lama. `limit` 1 sampai 50 (bawaan 20).
 
 Respons 200: { "data": [ { "pesanId", "pertanyaan", "jawaban", "sumber", "waktu" } ] }
+
+---
+
+## GET /api/forum
+Daftar topik Forum Diskusi, terbaru lebih dulu.
+Auth: wajib. Query: `limit` (default 20, maksimal 50), `cursor` (topikId terakhir dari halaman sebelumnya).
+
+Response 200:
+{
+  "data": {
+    "topik": [
+      {
+        "topikId": "abc123",
+        "uid": "uid-penulis",
+        "judul": "Arti kata horas",
+        "isi": "Apa arti horas dalam percakapan sehari-hari?",
+        "waktu": "2026-11-16T03:00:00.000Z",
+        "penulis": { "uid": "uid-penulis", "username": "desi", "nama": "Desi", "fotoProfil": null },
+        "jumlahBalasan": 2
+      }
+    ],
+    "nextCursor": "abc123"
+  }
+}
+`penulis` bernilai null jika akun penulis sudah dihapus. `nextCursor` null jika tidak ada halaman berikutnya.
+Response 400: cursor tidak valid.
+
+## POST /api/forum
+Buat topik baru (UC-11). Auth: wajib.
+Request: { "judul": "Arti kata horas", "isi": "Apa arti horas dalam percakapan sehari-hari?" }
+Response 201: objek topik seperti di atas dengan jumlahBalasan 0.
+Response 400: judul atau isi kosong, atau melebihi batas (judul 150, isi 5000 karakter).
+
+## GET /api/forum/:topikId
+Detail topik beserta balasannya, urut dari yang terlama (maksimal 200 balasan). Auth: wajib.
+Response 200: objek topik ditambah field `balasan`, yaitu array { balasanId, uid, isi, waktu, penulis }.
+Response 404: topik tidak ditemukan.
+
+## POST /api/forum/:topikId/balasan
+Balas sebuah topik (UC-12). Auth: wajib.
+Request: { "isi": "Horas artinya salam, bisa untuk halo atau selamat." }
+Response 201: objek balasan { balasanId, uid, isi, waktu, penulis }.
+Response 400: isi kosong atau lebih dari 2000 karakter.
+Response 404: topik tidak ditemukan.
