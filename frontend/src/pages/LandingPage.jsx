@@ -3,13 +3,11 @@ import { Link } from "react-router-dom";
 export default function LandingPage() {
   return (
     <div className="bg-custom-radial font-inter flex flex-col min-h-screen md:h-screen md:overflow-hidden">
-      {/* Konten Utama */}
       <section
         id="home"
         className="flex-1 flex flex-col justify-center mx-auto w-11/12 md:w-4/5 lg:w-3/4 max-w-5xl py-8 md:py-4"
       >
         <main className="flex flex-col items-center">
-          {/* Judul & Deskripsi */}
           <div className="text-center">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gradient font-poppins">
               Belajar Bahasa Daerah dengan Menyenangkan
@@ -20,7 +18,6 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Seksi Fitur (3 kolom di desktop agar tidak memakan tinggi layar) */}
           <section id="materi" className="w-full mt-6 md:mt-8">
             <div className="bg-white/30 backdrop-blur-sm rounded-xl shadow-lg font-inter text-custom2 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
               <div className="p-5 md:p-6">
