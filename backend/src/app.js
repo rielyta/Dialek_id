@@ -16,6 +16,7 @@ app.use("/api/akun", require("./routes/akunRoutes"));
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/materi", require("./routes/materiRoutes"));
 app.use("/api/susun-kosakata", require("./routes/susunKosakataRoutes"));
+app.use("/api/chatbot", require("./routes/chatbotRoutes"));
 app.use("/api/forum", require("./routes/forumRoutes"));
 
 app.use((req, res) => {

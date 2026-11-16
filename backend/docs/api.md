@@ -381,6 +381,29 @@ Ringkasan skor pengguna pada Latihan Susun Kosakata.
 }
 ```
 
+## Chatbot
+
+Semua endpoint membutuhkan header `Authorization: Bearer <ID token Firebase>`.
+
+### POST /api/chatbot
+Kirim pertanyaan ke Chatbot. Bila layanan NLP gagal atau melewati batas waktu, jawaban fallback statis dikembalikan dengan status 200 dan `sumber: "fallback"`.
+
+Body:
+{ "pesan": "Apa arti horas?", "konteks": "Materi Salam dan Sapaan" }
+`konteks` opsional, maksimal 1000 karakter. `pesan` wajib, maksimal 1000 karakter.
+
+Respons 200:
+{ "data": { "pesanId": "abc123", "pertanyaan": "Apa arti horas?", "jawaban": "...", "sumber": "nlp", "tersimpan": true, "waktu": "2026-11-15T12:00:00.000Z" } }
+
+Galat: 400 (pesan kosong, terlalu panjang, atau konteks tidak valid), 401 (tanpa token).
+
+### GET /api/chatbot/riwayat?limit=20
+Riwayat percakapan milik pengguna, urut dari yang paling lama. `limit` 1 sampai 50 (bawaan 20).
+
+Respons 200: { "data": [ { "pesanId", "pertanyaan", "jawaban", "sumber", "waktu" } ] }
+
+---
+
 ## GET /api/forum
 Daftar topik Forum Diskusi, terbaru lebih dulu.
 Auth: wajib. Query: `limit` (default 20, maksimal 50), `cursor` (topikId terakhir dari halaman sebelumnya).
