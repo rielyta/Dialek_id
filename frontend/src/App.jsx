@@ -5,7 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import ForumDiskusi from "./pages/ForumDiskusi";
 import LatihanKosaKata from "./pages/LatihanKosaKata";
 import LiterasiBudaya from "./pages/LiterasiBudaya";
-import Materi from "./pages/Materi";
+import PilihMateri from "./pages/PilihMateri"
 import Permainan from "./pages/Permainan";
 
 export default function App() {
@@ -26,7 +26,7 @@ export default function App() {
         <Route path="/forum-diskusi" element={<ForumDiskusi />} />
         <Route path="/latihan-kosakata" element={<LatihanKosaKata />} />
         <Route path="/literasi-budaya" element={<LiterasiBudaya />} />
-        <Route path="/materi" element={<Materi />} />
+        <Route path="/pilih-materi" element={<PilihMateri />} />        
         <Route path="/permainan" element={<Permainan />} />
       </Routes>
     </BrowserRouter>

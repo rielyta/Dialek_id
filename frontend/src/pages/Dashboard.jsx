@@ -12,6 +12,7 @@ import {
 import { auth } from "../service/firebase";
 import ForumDiskusi from "../assets/ForumDiskusi.webp";
 
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export default function DashboardBatak() {
@@ -71,7 +72,7 @@ export default function DashboardBatak() {
           const dashJson = await dashboardRes.json();
           const data = dashJson.data || dashJson || {};
 
-          // 1. Kosa Kata Mingguan (%)
+          // Kosa Kata Mingguan (%)
           let persenKosakata = 0;
           if (typeof data.kosakataMingguan === "number") {
             persenKosakata = data.kosakataMingguan;
@@ -95,7 +96,7 @@ export default function DashboardBatak() {
             }
           }
 
-          // 2. Level Budaya (angka)
+          // Level Budaya (angka)
           const rawLevelBudaya =
             typeof data.levelBudaya === "object" && data.levelBudaya !== null
               ? data.levelBudaya.level ?? data.levelBudaya.angka ?? 0
@@ -104,7 +105,7 @@ export default function DashboardBatak() {
             ? Number(rawLevelBudaya)
             : 0;
 
-          // 3. Peringkat Game Sambung Kata (angka)
+          // Peringkat Game Sambung Kata (angka)
           const rawPeringkat =
             typeof data.peringkatSambungKata === "object" &&
             data.peringkatSambungKata !== null
@@ -119,7 +120,7 @@ export default function DashboardBatak() {
             ? Number(rawPeringkat)
             : 0;
 
-          // 4. Latihan Soal (%)
+          // Latihan Soal (%)
           let persenLatihan = 0;
           if (typeof data.latihanSoal === "number") {
             persenLatihan = data.latihanSoal;
@@ -320,14 +321,13 @@ export default function DashboardBatak() {
           </div>
         </div>
 
-        {/* Heading Mulai Belajar */}
         <div className="flex justify-center mt-14 md:mt-20 mb-8">
           <h2 className="text-3xl font-bold text-gradient font-poppins text-center">
             Mulai Belajar
           </h2>
         </div>
 
-        {/* CONTENT 1: MATERI */}
+        {/* MATERI */}
         <div className="box-custom1 p-6 mt-4 min-h-64 flex items-center">
           <div className="flex flex-col md:flex-row items-center gap-6 w-full">
             <div className="w-full md:w-1/3 flex justify-center items-center">
@@ -346,7 +346,7 @@ export default function DashboardBatak() {
               </p>
               <button
                 type="button"
-                onClick={() => navigate("/materi")}
+                onClick={() => navigate("/pilih-materi")}
                 className="button-custom py-2 px-8 rounded-full hover:bg-lime-900 transition cursor-pointer"
               >
                 Pelajari
@@ -355,7 +355,7 @@ export default function DashboardBatak() {
           </div>
         </div>
 
-        {/* CONTENT 2: PERMAINAN */}
+        {/* PERMAINAN */}
         <div className="box-custom1 p-6 mt-6 min-h-64 flex items-center">
           <div className="flex flex-col-reverse md:flex-row items-center gap-6 w-full">
             <div className="w-full md:w-2/3 text-center md:text-right flex flex-col justify-center items-center md:items-end">
@@ -383,7 +383,7 @@ export default function DashboardBatak() {
           </div>
         </div>
 
-        {/* CONTENT 3: LITERASI BUDAYA */}
+        {/* LITERASI BUDAYA */}
         <div className="box-custom1 p-6 mt-6 min-h-64 flex items-center">
           <div className="flex flex-col md:flex-row items-center gap-6 w-full">
             <div className="w-full md:w-1/3 flex justify-center items-center">
@@ -412,7 +412,7 @@ export default function DashboardBatak() {
           </div>
         </div>
 
-        {/* CONTENT 4: KOSA KATA */}
+        {/*CONTENT 4: KOSA KATA */}
         <div className="box-custom1 p-6 mt-6 min-h-64 flex items-center">
           <div className="flex flex-col-reverse md:flex-row items-center gap-6 w-full">
             <div className="w-full md:w-2/3 text-center md:text-right flex flex-col justify-center items-center md:items-end">
@@ -441,7 +441,7 @@ export default function DashboardBatak() {
         </div>
       </section>
 
-      {/* Floating Chatbot Button (Kanan Bawah) */}
+      {/*  Chatbot Button */}
       <button
         type="button"
         onClick={() => navigate("/chatbot")}
