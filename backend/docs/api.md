@@ -164,7 +164,7 @@ Ringkasan progres belajar pengguna yang sedang login (FR-05, UC-08): level buday
 
 Catatan:
 - `kosakataMingguan` menghitung hasil Latihan Susun Kosakata dalam 7 hari terakhir.
-- `peringkatSambungKata` bernilai `null` sampai modul Permainan dan Leaderboard tersedia.
+- `peringkatSambungKata` berisi `{ "peringkat": 3, "skorTertinggi": 40 }`, atau `null` bila pengguna belum pernah menyelesaikan sesi Sambung Kata.
 
 ---
 
@@ -529,6 +529,34 @@ Akhiri sesi atas permintaan pemain. Skor akhir disimpan dan `Leaderboard/{uid}` 
 **Response 409:** sesi sudah berakhir.
 
 ---
+
+## GET /api/leaderboard
+
+Peringkat pemain Sambung Kata berdasarkan skor tertinggi (FR-14). Skor yang sama berbagi peringkat yang sama (1, 2, 2, 4). `nama` bernilai `null` bila pemain belum punya dokumen di koleksi `Users`.
+
+**Auth:** wajib
+
+**Query:** `limit` opsional, bilangan bulat 1 sampai 50 (bawaan 10).
+
+**Response 200:**
+```json
+{
+  "data": {
+    "peringkat": [
+      { "peringkat": 1, "uid": "abc123", "nama": "Desi", "skorTertinggi": 50 },
+      { "peringkat": 2, "uid": "def456", "nama": "Ani", "skorTertinggi": 30 }
+    ],
+    "saya": { "peringkat": 2, "uid": "def456", "nama": "Ani", "skorTertinggi": 30 }
+  }
+}
+```
+
+`saya` bernilai `null` bila pengguna belum punya skor di Leaderboard.
+
+**Response 400:** `limit` bukan bilangan bulat 1 sampai 50.
+
+---
+
 
 ## Chatbot
 
