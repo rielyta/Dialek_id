@@ -12,6 +12,8 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+
+app.use("/api/akun/masuk", require("./routes/masukRoutes"));
 app.use("/api/akun", require("./routes/akunRoutes"));
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/materi", require("./routes/materiRoutes"));
