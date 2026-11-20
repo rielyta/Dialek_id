@@ -113,7 +113,7 @@ Ubah data akun (FR-03). Hanya field yang dikirim yang diubah. `email` dan `passw
 
 ## DELETE /api/akun
 
-Hapus akun sendiri (FR-04): akun di Firebase Authentication, profil, serta progres (`Rating`, `HasilLatihan`, `HasilSusunKosakata`) di Firestore. Konfirmasi kata sandi (reauthentication) dilakukan di frontend sebelum memanggil endpoint ini.
+Hapus akun sendiri (FR-04): akun di Firebase Authentication, profil, serta progres (`Rating`, `HasilLatihan`, `HasilSusunKosakata`) di Firestore. Progres Literasi Budaya tersimpan di dokumen profil, sehingga ikut terhapus. Konfirmasi kata sandi (reauthentication) dilakukan di frontend sebelum memanggil endpoint ini.
 
 **Auth:** wajib
 
@@ -163,6 +163,7 @@ Ringkasan progres belajar pengguna yang sedang login (FR-05, UC-08): level buday
 ```
 
 Catatan:
+- `levelBudaya` naik sesuai jumlah konten Literasi Budaya yang sudah ditandai selesai (lihat `POST /api/literasi-budaya/:id/selesai`). Bernilai `Pemula`, `Menengah`, atau `Mahir`.
 - `kosakataMingguan` menghitung hasil Latihan Susun Kosakata dalam 7 hari terakhir.
 - `peringkatSambungKata` berisi `{ "peringkat": 3, "skorTertinggi": 40 }` (skor tertinggi sepanjang waktu, bukan harian), atau `null` bila pengguna belum pernah menyelesaikan sesi Sambung Kata.
 
@@ -578,41 +579,167 @@ Peringkat pemain Sambung Kata berdasarkan skor tertinggi (FR-15, UC-15). Bawaann
 
 - `tanggal` bernilai `null` bila `periode` adalah `semua`.
 - `saya` bernilai `null` bila pengguna belum punya skor pada periode itu.
-- `distribusi` adalah jumlah pemain pada tiap rentang skor tertinggi (seluruh pemain pada periode itu, bukan hanya yang masuk `limit`), untuk grafik distribusi performa. Daftar `peringkat` kosong (`[]`) dan semua `jumlah` bernilai 0 bila belum ada yang bermain.
-- Peringkat pada `GET /api/dashboard` (`peringkatSambungKata`) tetap memakai skor tertinggi sepanjang waktu.
+- `peringkat` berupa daftar kosong (`[]`) dan semua `jumlah` pada `distribusi` bernilai 0 bila belum ada pemain yang punya skor pada periode itu.
+- `distribusi` adalah jumlah pemain pada tiap rentang skor tertinggi (seluruh pemain pada periode itu, bukan hanya yang masuk `limit`), untuk grafik distribusi performa. 
 
 **Response 400:** `limit` bukan bilangan bulat 1 sampai 50, atau `periode` bukan `harian` atau `semua`.
 
 ---
 
-## Chatbot
+## GET /api/literasi-budaya
 
-Semua endpoint membutuhkan header `Authorization: Bearer <ID token Firebase>`.
+Daftar konten Literasi Budaya Batak Toba (FR-16, UC-16). Diurutkan berdasarkan `urutan`. Isi lengkap tidak dikirim di daftar, hanya di detail. `selesai` menandakan apakah pengguna sudah menandai konten tersebut selesai dibaca.
 
-### POST /api/chatbot
+**Auth:** wajib
+
+**Query:** `kategori` opsional, contoh `?kategori=Adat`. Kategori yang tersedia: `Kekerabatan`, `Adat`, `Kepercayaan`, `Kehidupan Sehari-hari`, `Seni dan Upacara`, `Bahasa dan Pepatah`.
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "kontenId": "literasi-01",
+      "judul": "Marga dan Silsilah",
+      "kategori": "Kekerabatan",
+      "urutan": 1,
+      "gambarUrl": null,
+      "selesai": true
+    },
+    {
+      "kontenId": "literasi-02",
+      "judul": "Hula-hula dan Boru",
+      "kategori": "Kekerabatan",
+      "urutan": 2,
+      "gambarUrl": null,
+      "selesai": false
+    }
+  ]
+}
+```
+
+`gambarUrl` bernilai `null` bila konten belum punya gambar. Frontend cukup menampilkan teks dalam kasus ini.
+
+---
+
+## GET /api/literasi-budaya/:id
+
+Detail konten Literasi Budaya berupa teks dan gambar (FR-16, UC-16). Paragraf pada `isi` dipisahkan oleh baris kosong (`\n\n`). `sumber` berisi rujukan pustaka untuk ditampilkan sebagai atribusi.
+
+**Auth:** wajib
+
+**Response 200:**
+```json
+{
+  "data": {
+    "kontenId": "literasi-03",
+    "judul": "Ulos dan Piso",
+    "kategori": "Adat",
+    "urutan": 3,
+    "isi": "Dalam hubungan antarkerabat, pemberian dari hula-hula kepada boru disebut ulos, ...",
+    "gambarUrl": null,
+    "sumber": "J. C. Vergouwen, The Social Organisation and Customary Law of the Toba-Batak of Northern Sumatra (The Hague: Martinus Nijhoff, 1964), hlm. 58-61."
+  }
+}
+```
+
+**Response 404:** konten tidak ditemukan (UC-16 alur A1).
+```json
+{ "error": "NotFound", "message": "Konten Literasi Budaya tidak ditemukan." }
+```
+
+---
+
+## POST /api/literasi-budaya/:id/selesai
+
+Tandai satu konten Literasi Budaya sebagai selesai dibaca. Level budaya pengguna dihitung ulang dari jumlah konten yang selesai: 0 sampai 2 konten `Pemula`, 3 sampai 5 `Menengah`, 6 atau lebih `Mahir`. Menandai konten yang sama berulang kali tidak menambah hitungan (`baru: false`).
+
+**Auth:** wajib
+
+**Request:** tanpa body
+
+**Response 200:**
+```json
+{
+  "data": {
+    "kontenId": "literasi-03",
+    "baru": true,
+    "jumlahSelesai": 3,
+    "levelBudaya": "Menengah"
+  }
+}
+```
+
+**Response 404:** konten tidak ditemukan, atau profil pengguna belum dibuat.
+
+---
+
+## POST /api/chatbot
+
 Kirim pertanyaan ke Chatbot. Bila layanan NLP gagal atau melewati batas waktu, jawaban fallback statis dikembalikan dengan status 200 dan `sumber: "fallback"`.
 
-Body:
+**Auth:** wajib
+
+**Request:**
+```json
 { "pesan": "Apa arti horas?", "konteks": "Materi Salam dan Sapaan" }
-`konteks` opsional, maksimal 1000 karakter. `pesan` wajib, maksimal 1000 karakter.
+```
 
-Respons 200:
-{ "data": { "pesanId": "abc123", "pertanyaan": "Apa arti horas?", "jawaban": "...", "sumber": "nlp", "tersimpan": true, "waktu": "2026-11-15T12:00:00.000Z" } }
+`pesan` wajib, maksimal 1000 karakter. `konteks` opsional, maksimal 1000 karakter.
 
-Galat: 400 (pesan kosong, terlalu panjang, atau konteks tidak valid), 401 (tanpa token).
+**Response 200:**
+```json
+{
+  "data": {
+    "pesanId": "abc123",
+    "pertanyaan": "Apa arti horas?",
+    "jawaban": "...",
+    "sumber": "nlp",
+    "tersimpan": true,
+    "waktu": "2026-11-15T12:00:00.000Z"
+  }
+}
+```
 
-### GET /api/chatbot/riwayat?limit=20
-Riwayat percakapan milik pengguna, urut dari yang paling lama. `limit` 1 sampai 50 (bawaan 20).
+**Response 400:** `pesan` kosong, terlalu panjang, atau `konteks` tidak valid.
 
-Respons 200: { "data": [ { "pesanId", "pertanyaan", "jawaban", "sumber", "waktu" } ] }
+---
+
+## GET /api/chatbot/riwayat
+
+Riwayat percakapan milik pengguna, urut dari yang paling lama.
+
+**Auth:** wajib
+
+**Query:** `limit` opsional, bilangan bulat 1 sampai 50 (bawaan 20).
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "pesanId": "abc123",
+      "pertanyaan": "Apa arti horas?",
+      "jawaban": "...",
+      "sumber": "nlp",
+      "waktu": "2026-11-15T12:00:00.000Z"
+    }
+  ]
+}
+```
 
 ---
 
 ## GET /api/forum
-Daftar topik Forum Diskusi, terbaru lebih dulu.
-Auth: wajib. Query: `limit` (default 20, maksimal 50), `cursor` (topikId terakhir dari halaman sebelumnya).
 
-Response 200:
+Daftar topik Forum Diskusi, terbaru lebih dulu. `penulis` bernilai `null` jika akun penulis sudah dihapus.
+
+**Auth:** wajib
+
+**Query:** `limit` opsional (bawaan 20, maksimal 50), `cursor` opsional (`topikId` terakhir dari halaman sebelumnya).
+
+**Response 200:**
+```json
 {
   "data": {
     "topik": [
@@ -629,23 +756,89 @@ Response 200:
     "nextCursor": "abc123"
   }
 }
-`penulis` bernilai null jika akun penulis sudah dihapus. `nextCursor` null jika tidak ada halaman berikutnya.
-Response 400: cursor tidak valid.
+```
+
+`nextCursor` bernilai `null` jika tidak ada halaman berikutnya.
+
+**Response 400:** `cursor` tidak valid.
+
+---
 
 ## POST /api/forum
-Buat topik baru (UC-11). Auth: wajib.
-Request: { "judul": "Arti kata horas", "isi": "Apa arti horas dalam percakapan sehari-hari?" }
-Response 201: objek topik seperti di atas dengan jumlahBalasan 0.
-Response 400: judul atau isi kosong, atau melebihi batas (judul 150, isi 5000 karakter).
+
+Buat topik baru (UC-11).
+
+**Auth:** wajib
+
+**Request:**
+```json
+{ "judul": "Arti kata horas", "isi": "Apa arti horas dalam percakapan sehari-hari?" }
+```
+
+**Response 201:** objek topik seperti pada GET /api/forum, dengan `jumlahBalasan` bernilai 0.
+
+**Response 400:** `judul` atau `isi` kosong, atau melebihi batas (judul 150 karakter, isi 5000 karakter).
+
+---
 
 ## GET /api/forum/:topikId
-Detail topik beserta balasannya, urut dari yang terlama (maksimal 200 balasan). Auth: wajib.
-Response 200: objek topik ditambah field `balasan`, yaitu array { balasanId, uid, isi, waktu, penulis }.
-Response 404: topik tidak ditemukan.
+
+Detail topik beserta balasannya, urut dari yang terlama (maksimal 200 balasan).
+
+**Auth:** wajib
+
+**Response 200:** objek topik seperti pada GET /api/forum, ditambah field `balasan`:
+```json
+{
+  "data": {
+    "topikId": "abc123",
+    "uid": "uid-penulis",
+    "judul": "Arti kata horas",
+    "isi": "Apa arti horas dalam percakapan sehari-hari?",
+    "waktu": "2026-11-16T03:00:00.000Z",
+    "penulis": { "uid": "uid-penulis", "username": "desi", "nama": "Desi", "fotoProfil": null },
+    "jumlahBalasan": 1,
+    "balasan": [
+      {
+        "balasanId": "bal123",
+        "uid": "uid-pembalas",
+        "isi": "Horas artinya salam, bisa untuk halo atau selamat.",
+        "waktu": "2026-11-16T03:05:00.000Z",
+        "penulis": { "uid": "uid-pembalas", "username": "ani", "nama": "Ani", "fotoProfil": null }
+      }
+    ]
+  }
+}
+```
+
+**Response 404:** topik tidak ditemukan.
+
+---
 
 ## POST /api/forum/:topikId/balasan
-Balas sebuah topik (UC-12). Auth: wajib.
-Request: { "isi": "Horas artinya salam, bisa untuk halo atau selamat." }
-Response 201: objek balasan { balasanId, uid, isi, waktu, penulis }.
-Response 400: isi kosong atau lebih dari 2000 karakter.
-Response 404: topik tidak ditemukan.
+
+Balas sebuah topik (UC-12).
+
+**Auth:** wajib
+
+**Request:**
+```json
+{ "isi": "Horas artinya salam, bisa untuk halo atau selamat." }
+```
+
+**Response 201:**
+```json
+{
+  "data": {
+    "balasanId": "bal123",
+    "uid": "uid-pembalas",
+    "isi": "Horas artinya salam, bisa untuk halo atau selamat.",
+    "waktu": "2026-11-16T03:05:00.000Z",
+    "penulis": { "uid": "uid-pembalas", "username": "ani", "nama": "Ani", "fotoProfil": null }
+  }
+}
+```
+
+**Response 400:** `isi` kosong atau lebih dari 2000 karakter.
+
+**Response 404:** topik tidak ditemukan.
