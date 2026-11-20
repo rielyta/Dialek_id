@@ -17,6 +17,8 @@ app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/materi", require("./routes/materiRoutes"));
 app.use("/api/susun-kosakata", require("./routes/susunKosakataRoutes"));
 app.use("/api/permainan", require("./routes/permainanRoutes"));
+app.use("/api/leaderboard", require("./routes/leaderboardRoutes"));
+app.use("/api/literasi-budaya", require("./routes/literasiBudayaRoutes"));
 app.use("/api/chatbot", require("./routes/chatbotRoutes"));
 app.use("/api/forum", require("./routes/forumRoutes"));
 

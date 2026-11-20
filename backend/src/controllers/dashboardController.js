@@ -1,4 +1,5 @@
 const { db } = require("../config/firebaseAdmin");
+const { ambilPeringkatPemain } = require("../services/leaderboardService");
 
 const TINGKAT_LEVEL = [
   { nama: "Pemula", minExp: 0 },
@@ -87,10 +88,11 @@ async function getDashboard(req, res) {
   try {
     const uid = req.user.uid;
 
-    const [userDoc, progresLatihan, kosakataMingguan] = await Promise.all([
+    const [userDoc, progresLatihan, kosakataMingguan, peringkat] = await Promise.all([
       db.collection("Users").doc(uid).get(),
       hitungProgresLatihan(uid),
       hitungKosakataMingguan(uid),
+      ambilPeringkatPemain(uid),
     ]);
 
     const user = userDoc.exists ? userDoc.data() : {};
@@ -103,7 +105,9 @@ async function getDashboard(req, res) {
         exp: bar,
         kosakataMingguan,
         progresLatihan,
-        peringkatSambungKata: null,
+        peringkatSambungKata: peringkat
+          ? { peringkat: peringkat.peringkat, skorTertinggi: peringkat.skorTertinggi }
+          : null,
       },
     });
   } catch (err) {
