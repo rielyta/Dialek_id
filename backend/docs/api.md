@@ -164,7 +164,7 @@ Ringkasan progres belajar pengguna yang sedang login (FR-05, UC-08): level buday
 
 Catatan:
 - `kosakataMingguan` menghitung hasil Latihan Susun Kosakata dalam 7 hari terakhir.
-- `peringkatSambungKata` berisi `{ "peringkat": 3, "skorTertinggi": 40 }`, atau `null` bila pengguna belum pernah menyelesaikan sesi Sambung Kata.
+- `peringkatSambungKata` berisi `{ "peringkat": 3, "skorTertinggi": 40 }` (skor tertinggi sepanjang waktu, bukan harian), atau `null` bila pengguna belum pernah menyelesaikan sesi Sambung Kata.
 
 ---
 
@@ -385,7 +385,7 @@ Ringkasan skor pengguna pada Latihan Susun Kosakata.
 
 ## POST /api/permainan/mulai
 
-Mulai sesi permainan Sambung Kata (FR-14, UC-14). Sistem memilih kata awal acak dari koleksi `Kosakata` dan membuat sesi di `Permainan/{sesiId}`.
+Mulai sesi permainan Sambung Kata (FR-14, UC-14). Sistem memilih kata awal acak dari koleksi `Kosakata` dan membuat sesi di `Permainan/{sesiId}`. Setiap sesi berlangsung 60 detik sejak `waktuMulai` (`durasiDetik`).
 
 **Auth:** wajib
 
@@ -398,6 +398,8 @@ Mulai sesi permainan Sambung Kata (FR-14, UC-14). Sistem memilih kata awal acak 
     "sesiId": "abc123",
     "status": "berjalan",
     "skor": 0,
+    "skorSistem": 0,
+    "durasiDetik": 60,
     "jumlahKata": 1,
     "kataTerpakai": ["horas"],
     "kataTerakhir": "horas",
@@ -410,16 +412,21 @@ Mulai sesi permainan Sambung Kata (FR-14, UC-14). Sistem memilih kata awal acak 
 }
 ```
 
+`skor` adalah skor pemain. `skorSistem` adalah skor lawan (sistem): 10 poin untuk setiap kata sambungan sistem, tidak termasuk kata awal.
+
 **Response 500:** data kosakata belum tersedia.
 
 ---
 
 ## POST /api/permainan/:sesiId/jawaban
 
-Kirim kata sambungan. Kata harus diawali huruf terakhir kata sebelumnya, ada di koleksi `Kosakata`, dan belum dipakai pada sesi yang sama. Huruf besar atau kecil dan spasi berlebih diabaikan. Validasi dan skor dihitung di server.
+Kirim kata sambungan. Kata harus diawali huruf terakhir kata sebelumnya, ada di koleksi `Kosakata`, dan belum dipakai pada sesi yang sama. Huruf besar atau kecil dan spasi berlebih diabaikan. Validasi, skor, dan batas waktu dihitung di server.
 
 - Kata valid: skor bertambah 10, lalu sistem menyambung dengan `kataSistem`.
-- Kata tidak valid: sesi berakhir, skor akhir disimpan, dan `Leaderboard/{uid}` diperbarui bila skornya melampaui skor tertinggi pemain (UC-14 alur A1).
+- Kata tidak valid: sesi berakhir dan skor akhir disimpan (UC-14 alur A1).
+- Jawaban yang tiba setelah 60 detik sejak `waktuMulai` tidak dihitung. Sesi berakhir dengan alasan `waktu_habis`. Server memberi toleransi 3 detik untuk keterlambatan jaringan.
+- Saat sesi berakhir, skor akhir memperbarui leaderboard harian (`LeaderboardHarian/{tanggal}/Skor/{uid}`) dan leaderboard semua waktu (`Leaderboard/{uid}`) bila melampaui skor tertinggi pemain pada periode masing-masing. Skor 0 tidak disimpan.
+- `rekorBaru` bernilai true bila skor akhir melampaui skor tertinggi pemain hari ini.
 
 **Auth:** wajib
 
@@ -440,6 +447,8 @@ Kirim kata sambungan. Kata harus diawali huruf terakhir kata sebelumnya, ada di 
       "sesiId": "abc123",
       "status": "berjalan",
       "skor": 10,
+      "skorSistem": 10,
+      "durasiDetik": 60,
       "jumlahKata": 3,
       "kataTerpakai": ["horas", "sada", "aek"],
       "kataTerakhir": "aek",
@@ -464,6 +473,8 @@ Kirim kata sambungan. Kata harus diawali huruf terakhir kata sebelumnya, ada di 
       "sesiId": "abc123",
       "status": "selesai",
       "skor": 10,
+      "skorSistem": 10,
+      "durasiDetik": 60,
       "jumlahKata": 3,
       "kataTerpakai": ["horas", "sada", "aek"],
       "kataTerakhir": "aek",
@@ -480,6 +491,7 @@ Nilai `alasan` saat `valid` bernilai false:
 - `tidak_sesuai_aturan_sambung`: huruf awal kata bukan huruf terakhir kata sebelumnya.
 - `sudah_dipakai`: kata sudah dipakai pada sesi ini.
 - `tidak_ada_di_kosakata`: kata tidak ditemukan di koleksi `Kosakata`.
+- `waktu_habis`: jawaban tiba setelah batas waktu sesi. Kata pada jawaban itu tidak dihitung.
 
 Jika sistem tidak punya kata lanjutan lagi, `valid` bernilai true, `kataSistem` bernilai `null`, dan sesi selesai dengan `alasanSelesai` berisi `sistem_kehabisan_kata`.
 
@@ -495,7 +507,7 @@ Jika sistem tidak punya kata lanjutan lagi, `valid` bernilai true, `kataSistem` 
 
 ## POST /api/permainan/:sesiId/akhiri
 
-Akhiri sesi atas permintaan pemain. Skor akhir disimpan dan `Leaderboard/{uid}` diperbarui bila skornya melampaui skor tertinggi pemain.
+Akhiri sesi atas permintaan pemain, atau oleh klien saat waktu habis. Skor akhir disimpan dan kedua leaderboard diperbarui bila skornya melampaui skor tertinggi pemain pada periode masing-masing (harian dan semua waktu). Skor 0 tidak disimpan.
 
 **Auth:** wajib
 
@@ -510,6 +522,8 @@ Akhiri sesi atas permintaan pemain. Skor akhir disimpan dan `Leaderboard/{uid}` 
       "sesiId": "abc123",
       "status": "selesai",
       "skor": 30,
+      "skorSistem": 30,
+      "durasiDetik": 60,
       "jumlahKata": 7,
       "kataTerpakai": ["horas", "sada", "aek", "kata", "asa", "anak", "kapal"],
       "kataTerakhir": "kapal",
@@ -532,31 +546,44 @@ Akhiri sesi atas permintaan pemain. Skor akhir disimpan dan `Leaderboard/{uid}` 
 
 ## GET /api/leaderboard
 
-Peringkat pemain Sambung Kata berdasarkan skor tertinggi (FR-14). Skor yang sama berbagi peringkat yang sama (1, 2, 2, 4). `nama` bernilai `null` bila pemain belum punya dokumen di koleksi `Users`.
+Peringkat pemain Sambung Kata berdasarkan skor tertinggi (FR-15, UC-15). Bawaannya adalah peringkat harian: skor tertinggi tiap pemain pada hari ini menurut waktu Indonesia Barat (WIB), dan peringkat dimulai ulang setiap pukul 00.00 WIB. Skor yang sama berbagi peringkat yang sama (1, 2, 2, 4). `nama` bernilai `null` bila pemain belum punya dokumen di koleksi `Users`.
 
 **Auth:** wajib
 
-**Query:** `limit` opsional, bilangan bulat 1 sampai 50 (bawaan 10).
+**Query:**
+- `limit` opsional, bilangan bulat 1 sampai 50 (bawaan 10).
+- `periode` opsional, `harian` (bawaan) atau `semua` (skor tertinggi sepanjang waktu).
 
 **Response 200:**
 ```json
 {
   "data": {
+    "periode": "harian",
+    "tanggal": "2026-11-20",
     "peringkat": [
-      { "peringkat": 1, "uid": "abc123", "nama": "Desi", "skorTertinggi": 50 },
-      { "peringkat": 2, "uid": "def456", "nama": "Ani", "skorTertinggi": 30 }
+      { "peringkat": 1, "uid": "abc123", "nama": "Desi", "skorTertinggi": 150 },
+      { "peringkat": 2, "uid": "def456", "nama": "Ani", "skorTertinggi": 120 }
     ],
-    "saya": { "peringkat": 2, "uid": "def456", "nama": "Ani", "skorTertinggi": 30 }
+    "saya": { "peringkat": 2, "uid": "def456", "nama": "Ani", "skorTertinggi": 120 },
+    "distribusi": [
+      { "label": "1-49", "batasBawah": 1, "batasAtas": 49, "jumlah": 3 },
+      { "label": "50-99", "batasBawah": 50, "batasAtas": 99, "jumlah": 5 },
+      { "label": "100-149", "batasBawah": 100, "batasAtas": 149, "jumlah": 2 },
+      { "label": "150-199", "batasBawah": 150, "batasAtas": 199, "jumlah": 1 },
+      { "label": "200+", "batasBawah": 200, "batasAtas": null, "jumlah": 0 }
+    ]
   }
 }
 ```
 
-`saya` bernilai `null` bila pengguna belum punya skor di Leaderboard.
+- `tanggal` bernilai `null` bila `periode` adalah `semua`.
+- `saya` bernilai `null` bila pengguna belum punya skor pada periode itu.
+- `distribusi` adalah jumlah pemain pada tiap rentang skor tertinggi (seluruh pemain pada periode itu, bukan hanya yang masuk `limit`), untuk grafik distribusi performa. Daftar `peringkat` kosong (`[]`) dan semua `jumlah` bernilai 0 bila belum ada yang bermain.
+- Peringkat pada `GET /api/dashboard` (`peringkatSambungKata`) tetap memakai skor tertinggi sepanjang waktu.
 
-**Response 400:** `limit` bukan bilangan bulat 1 sampai 50.
+**Response 400:** `limit` bukan bilangan bulat 1 sampai 50, atau `periode` bukan `harian` atau `semua`.
 
 ---
-
 
 ## Chatbot
 

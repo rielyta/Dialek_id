@@ -1,7 +1,14 @@
-const { ambilTop, ambilPeringkatPemain } = require("../services/leaderboardService");
+const {
+  PERIODE_VALID,
+  tanggalHariIni,
+  ambilTop,
+  ambilPeringkatPemain,
+  ambilDistribusi,
+} = require("../services/leaderboardService");
 
 const LIMIT_DEFAULT = 10;
 const LIMIT_MAKS = 50;
+const PERIODE_DEFAULT = "harian";
 
 function badRequest(res, message) {
   return res.status(400).json({ error: "BadRequest", message });
@@ -23,8 +30,27 @@ async function getLeaderboard(req, res) {
       }
     }
 
-    const [peringkat, saya] = await Promise.all([ambilTop(limit), ambilPeringkatPemain(req.user.uid)]);
-    return res.status(200).json({ data: { peringkat, saya } });
+    const periode = req.query.periode ?? PERIODE_DEFAULT;
+    if (!PERIODE_VALID.includes(periode)) {
+      return badRequest(res, `periode harus salah satu dari: ${PERIODE_VALID.join(", ")}.`);
+    }
+
+    const tanggal = tanggalHariIni();
+    const [peringkat, saya, distribusi] = await Promise.all([
+      ambilTop(limit, periode, tanggal),
+      ambilPeringkatPemain(req.user.uid, periode, tanggal),
+      ambilDistribusi(periode, tanggal),
+    ]);
+
+    return res.status(200).json({
+      data: {
+        periode,
+        tanggal: periode === "harian" ? tanggal : null,
+        peringkat,
+        saya,
+        distribusi,
+      },
+    });
   } catch (err) {
     return serverError(res, "getLeaderboard", err);
   }
