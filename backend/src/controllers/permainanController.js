@@ -7,9 +7,15 @@ const {
   cariKataDenganAwalan,
   pilihKataAwal,
 } = require("../services/permainanService");
+const { tanggalHariIni, refSkorPemain } = require("../services/leaderboardService");
 
 const SKOR_PER_KATA = 10;
 const MAKS_PANJANG_KATA = 50;
+
+// Satu sesi berlangsung 60 detik sejak waktuMulai. Toleransi menutup keterlambatan jaringan,
+// supaya jawaban yang dikirim tepat sebelum waktu habis tidak ditolak.
+const DURASI_SESI_DETIK = 60;
+const TOLERANSI_JARINGAN_DETIK = 3;
 
 function badRequest(res, message) {
   return res.status(400).json({ error: "BadRequest", message });
@@ -28,11 +34,20 @@ function refSesi(sesiId) {
   return db.collection("Permainan").doc(sesiId);
 }
 
+// Kata pada kataTerpakai selalu bergantian: indeks 0 kata awal dari sistem, indeks ganjil dari pemain,
+// indeks genap berikutnya dari sistem. Skor sistem = jumlah kata sambungan sistem (tanpa kata awal) x skor per kata.
+function hitungSkorSistem(kataTerpakai) {
+  const kataSistem = kataTerpakai.filter((_, i) => i % 2 === 0).length;
+  return Math.max(0, kataSistem - 1) * SKOR_PER_KATA;
+}
+
 function formatSesi(sesiId, data) {
   return {
     sesiId,
     status: data.status,
     skor: data.skor,
+    skorSistem: hitungSkorSistem(data.kataTerpakai),
+    durasiDetik: DURASI_SESI_DETIK,
     jumlahKata: data.kataTerpakai.length,
     kataTerpakai: data.kataTerpakai,
     kataTerakhir: data.kataTerakhir,
@@ -41,6 +56,12 @@ function formatSesi(sesiId, data) {
     waktuMulai: keIso(data.waktuMulai),
     waktuSelesai: keIso(data.waktuSelesai),
   };
+}
+
+function melewatiBatasWaktu(data) {
+  const mulai = data.waktuMulai && typeof data.waktuMulai.toMillis === "function" ? data.waktuMulai.toMillis() : null;
+  if (mulai === null) return false;
+  return Date.now() > mulai + (DURASI_SESI_DETIK + TOLERANSI_JARINGAN_DETIK) * 1000;
 }
 
 function periksaSesi(snap, uid) {
@@ -68,13 +89,34 @@ async function ambilNama(uid) {
   return data.nama ?? data.username ?? null;
 }
 
+// Memperbarui dua leaderboard sekaligus: skor tertinggi hari ini (Leaderboard harian) dan
+// skor tertinggi sepanjang waktu (Leaderboard, dipakai Dashboard). Semua pembacaan dilakukan
+// lebih dulu; penulisan dijalankan lewat fungsi `tulis` setelah pembacaan lain selesai.
 async function siapkanLeaderboard(tx, uid, skor) {
-  const ref = db.collection("Leaderboard").doc(uid);
-  const snap = await tx.get(ref);
-  const skorLama = snap.exists ? snap.data().skorTertinggi ?? 0 : 0;
-  if (skor <= skorLama) return null;
+  const tanggal = tanggalHariIni();
+  const refSemua = refSkorPemain("semua", uid);
+  const refHarian = refSkorPemain("harian", uid, tanggal);
+
+  const snapSemua = await tx.get(refSemua);
+  const snapHarian = await tx.get(refHarian);
+  const skorLamaSemua = snapSemua.exists ? snapSemua.data().skorTertinggi ?? 0 : 0;
+  const skorLamaHarian = snapHarian.exists ? snapHarian.data().skorTertinggi ?? 0 : 0;
+
+  const rekorSemua = skor > skorLamaSemua;
+  const rekorHarian = skor > skorLamaHarian;
+  if (!rekorSemua && !rekorHarian) return null;
+
   const nama = await ambilNama(uid);
-  return () => tx.set(ref, { uid, nama, skorTertinggi: skor, diperbarui: Timestamp.now() }, { merge: true });
+  const tulis = () => {
+    if (rekorSemua) {
+      tx.set(refSemua, { uid, nama, skorTertinggi: skor, diperbarui: Timestamp.now() }, { merge: true });
+    }
+    if (rekorHarian) {
+      tx.set(refHarian, { uid, nama, tanggal, skorTertinggi: skor, diperbarui: Timestamp.now() }, { merge: true });
+    }
+  };
+  // rekorBaru mengikuti skor tertinggi hari ini, sesuai peringkat yang ditampilkan di layar permainan.
+  return { tulis, rekorBaru: rekorHarian };
 }
 
 async function akhiriDalamTransaksi(tx, ref, data, uid, alasan, tambahan = {}) {
@@ -85,10 +127,10 @@ async function akhiriDalamTransaksi(tx, ref, data, uid, alasan, tambahan = {}) {
     alasanSelesai: alasan,
     waktuSelesai: Timestamp.now(),
   };
-  const tulisLeaderboard = await siapkanLeaderboard(tx, uid, sesiAkhir.skor);
+  const leaderboard = await siapkanLeaderboard(tx, uid, sesiAkhir.skor);
   tx.update(ref, { ...tambahan, status: sesiAkhir.status, alasanSelesai: alasan, waktuSelesai: sesiAkhir.waktuSelesai });
-  if (tulisLeaderboard) tulisLeaderboard();
-  return { sesiAkhir, rekorBaru: tulisLeaderboard !== null };
+  if (leaderboard) leaderboard.tulis();
+  return { sesiAkhir, rekorBaru: leaderboard ? leaderboard.rekorBaru : false };
 }
 
 async function mulaiPermainan(req, res) {
@@ -144,6 +186,13 @@ async function kirimJawaban(req, res) {
         return;
       }
       const data = periksa.data;
+
+      // Jawaban yang tiba setelah batas waktu tidak dihitung; sesi diakhiri dengan skor yang sudah ada.
+      if (melewatiBatasWaktu(data)) {
+        const { sesiAkhir, rekorBaru } = await akhiriDalamTransaksi(tx, ref, data, uid, "waktu_habis");
+        hasil = { valid: false, alasan: "waktu_habis", kataSistem: null, rekorBaru, sesi: formatSesi(sesiId, sesiAkhir) };
+        return;
+      }
 
       let alasan = null;
       if (kata[0] !== hurufTerakhir(data.kataTerakhir)) alasan = "tidak_sesuai_aturan_sambung";
