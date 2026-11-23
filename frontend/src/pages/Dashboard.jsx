@@ -425,7 +425,7 @@ export default function DashboardBatak() {
               </p>
               <button
                 type="button"
-                onClick={() => navigate("/kosakata")}
+                onClick={() => navigate("/latihan-kosakata")}
                 className="button-custom py-2 px-8 rounded-full hover:bg-lime-900 transition cursor-pointer"
               >
                 Pelajari
