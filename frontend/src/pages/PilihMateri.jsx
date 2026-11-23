@@ -43,7 +43,6 @@ export default function PilihMateri() {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
-      {/* Slide-out Sidebar */}
       <aside
         className={`fixed top-0 left-0 bg-white w-64 h-full shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
