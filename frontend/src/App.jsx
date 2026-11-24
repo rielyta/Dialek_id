@@ -5,7 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import ForumDiskusi from "./pages/ForumDiskusi";
 import LatihanKosaKata from "./pages/LatihanKosaKata";
 import LiterasiBudaya from "./pages/LiterasiBudaya";
-import Materi from "./pages/Materi";
+import PilihMateri from "./pages/PilihMateri"
+import MateriLayout from "./pages/MateriLayout";
 import Permainan from "./pages/Permainan";
 
 export default function App() {
@@ -14,7 +15,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
 
-        {/* Rute Autentikasi */}
         <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
         <Route path="/auth/login" element={<AuthPage />} />
         <Route path="/auth/register" element={<AuthPage />} />
@@ -26,7 +26,8 @@ export default function App() {
         <Route path="/forum-diskusi" element={<ForumDiskusi />} />
         <Route path="/latihan-kosakata" element={<LatihanKosaKata />} />
         <Route path="/literasi-budaya" element={<LiterasiBudaya />} />
-        <Route path="/materi" element={<Materi />} />
+        <Route path="/pilih-materi" element={<PilihMateri />} />   
+        <Route path="/materi/:slug" element={<MateriLayout />} />
         <Route path="/permainan" element={<Permainan />} />
       </Routes>
     </BrowserRouter>
