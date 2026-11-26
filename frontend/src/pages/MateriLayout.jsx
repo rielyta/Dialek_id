@@ -180,7 +180,6 @@ export default function MateriLayout() {
 
   return (
     <div className="bg-custom-radial font-inter flex flex-col min-h-screen">
-      {/* Hapus prop username="Pengguna" agar nama lengkap tampil otomatis */}
       <Navbar />
 
       <section
