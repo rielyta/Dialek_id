@@ -3,6 +3,7 @@ import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import ForumDiskusi from "./pages/ForumDiskusi";
+import ForumDiskusiJawab from "./pages/ForumDiskusiJawab";
 import LatihanKosaKata from "./pages/LatihanKosaKata";
 import LiterasiBudaya from "./pages/LiterasiBudaya";
 import PilihMateri from "./pages/PilihMateri"
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard-batak" element={<Dashboard />} />
         <Route path="/forum-diskusi" element={<ForumDiskusi />} />
+        <Route path="/forum-diskusi/jawab" element={<ForumDiskusiJawab />} />        
         <Route path="/latihan-kosakata" element={<LatihanKosaKata />} />
         <Route path="/literasi-budaya" element={<LiterasiBudaya />} />
         <Route path="/pilih-materi" element={<PilihMateri />} />   
