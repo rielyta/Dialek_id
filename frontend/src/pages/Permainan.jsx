@@ -1,18 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import {
-  FaArrowLeft,
   FaInfoCircle,
   FaTrophy,
   FaFlagCheckered,
-  FaUser,
 } from "react-icons/fa";
+import Navbar from "../components/Layout/Navbar";
+import Sidebar from "../components/Layout/Sidebar";
 import {
   mulaiPermainan,
   kirimJawaban,
   akhiriPermainan,
   ambilLeaderboard,
-  ambilUsername,
 } from "../service/permainan";
 
 // Dipakai sebelum sesi dimulai. Selama dan sesudah bermain, durasi mengikuti jawaban server.
@@ -49,7 +47,10 @@ function DaftarKata({ kata, kosongTeks }) {
   }, [kata.length]);
 
   return (
-    <div className="mt-4 text-sm min-h-7 max-h-72 overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-custom2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white [&::-webkit-scrollbar-thumb]:rounded-full" aria-live="polite">
+    <div
+      className="mt-4 text-sm min-h-7 max-h-72 overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-custom2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white [&::-webkit-scrollbar-thumb]:rounded-full"
+      aria-live="polite"
+    >
       {kata.length === 0 && <p className="text-gray-500">{kosongTeks}</p>}
       {kata.map((k, i) => (
         <div
@@ -232,7 +233,7 @@ function PopupPetunjuk({ durasi, onTutup }) {
 }
 
 export default function Permainan() {
-  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // "siap" | "berjalan" | "selesai"
   const [tahap, setTahap] = useState("siap");
@@ -246,7 +247,6 @@ export default function Permainan() {
   const [sibuk, setSibuk] = useState(false);
   const [akhiriGagal, setAkhiriGagal] = useState(false);
   const [petunjukTerbuka, setPetunjukTerbuka] = useState(false);
-  const [username, setUsername] = useState("");
 
   const [durasi, setDurasi] = useState(DURASI_BAWAAN_DETIK);
   const [sisaDetik, setSisaDetik] = useState(DURASI_BAWAAN_DETIK);
@@ -268,9 +268,6 @@ export default function Permainan() {
 
   useEffect(() => {
     muatPeringkat();
-    ambilUsername().then((nama) => {
-      if (nama) setUsername(nama);
-    });
   }, []);
 
   // Hitung mundur berdasarkan batas waktu mutlak, supaya tetap akurat
@@ -392,17 +389,6 @@ export default function Permainan() {
     }
   });
 
-  const keluar = async () => {
-    if (tahap === "berjalan" && sesi && !sibuk) {
-      try {
-        await akhiriPermainan(sesi.sesiId);
-      } catch {
-        // Tetap keluar walau sesi gagal diakhiri.
-      }
-    }
-    navigate("/dashboard-batak");
-  };
-
   const huruf = (sesi?.hurufBerikutnya || "").toUpperCase();
   const kataTerpakai = sesi?.kataTerpakai || [];
   const kataPemain = kataTerpakai.filter((_, i) => i % 2 === 1);
@@ -417,22 +403,23 @@ export default function Permainan() {
   const teksAlasan =
     sesi && (waktuHabis ? "Waktu habis!" : (ALASAN_SELESAI[sesi.alasanSelesai] || (() => ""))(sesi));
 
+  const sedangBermain = tahap === "berjalan";
+  
   return (
-    <div className="bg-custom-radial font-inter flex flex-col min-h-screen">
-      <nav className="flex items-center justify-between w-full px-6 py-8 md:px-12 md:py-10">
-        <Link
-          to="/dashboard-batak"
-          className="logo font-irish m-0 text-2xl hover:opacity-80 transition"
-        >
-          dialek.id
-        </Link>
-        <div className="flex items-center font-semibold text-custom2">
-          <span className="px-3 md:px-4 text-base md:text-xl" data-testid="username">
-            {username || "Pengguna"}
-          </span>
-          <FaUser className="text-xl md:text-2xl" />
-        </div>
-      </nav>
+    <div className="bg-custom-radial font-inter flex flex-col min-h-screen relative">
+        {/* Sidebar */}
+        <Sidebar
+          isOpen={!sedangBermain && isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+
+        {/* Navbar: logo dan profil terkunci saat permainan berlangsung */}
+        <Navbar
+          disableLogo={sedangBermain}
+          onLogoClick={() => {
+            if (!sedangBermain) setIsSidebarOpen(true);
+          }}
+        />
 
       <main className="flex flex-col items-center flex-grow w-11/12 sm:w-4/5 max-w-4xl mx-auto pb-10">
         <div className="relative flex items-center justify-center w-full">

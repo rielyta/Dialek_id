@@ -4,12 +4,15 @@ import { FaUser } from "react-icons/fa";
 import { ambilAkun } from "../../service/akun";
 import { auth } from "../../service/firebase";
 
-export default function ProfileButton({ nama, profilePath = "/profil" }) {
+export default function ProfileButton({
+  nama,
+  profilePath = "/profil",
+  disabled = false,
+}) {
   const navigate = useNavigate();
   const [namaAkun, setNamaAkun] = useState("");
 
   useEffect(() => {
-    // Jika prop nama sudah dikirim dari parent, tidak perlu fetch ulang
     if (nama) return;
 
     let aktif = true;
@@ -19,7 +22,6 @@ export default function ProfileButton({ nama, profilePath = "/profil" }) {
         const namaTampil =
           akun?.nama ||
           auth.currentUser?.displayName ||
-          akun?.username ||
           "Pengguna";
         setNamaAkun(namaTampil);
       })
@@ -42,8 +44,13 @@ export default function ProfileButton({ nama, profilePath = "/profil" }) {
   return (
     <button
       type="button"
-      onClick={() => navigate(profilePath)}
-      className="flex items-center m-0 font-semibold text-custom2 cursor-pointer hover:text-custom1 transition focus:outline-none"
+      disabled={disabled}
+      onClick={() => !disabled && navigate(profilePath)}
+      className={`flex items-center m-0 font-semibold text-custom2 focus:outline-none ${
+        disabled
+          ? "cursor-default"
+          : "cursor-pointer hover:text-custom1 transition"
+      }`}
     >
       <span className="px-3 md:px-4 text-base md:text-xl" data-testid="username">
         {teksTampil}
