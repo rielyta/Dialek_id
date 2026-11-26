@@ -1,13 +1,13 @@
-import { Link, useNavigate } from "react-router-dom";
-import { FaUser } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import ProfileButton from "./ProfileButton";
 
 export default function Navbar({
-  username = "Pengguna",
+  nama,
+  username,
   onLogoClick,
-  profilePath = "/akun",
+  profilePath = "/profil",
+  showProfile = true,
 }) {
-  const navigate = useNavigate();
-
   return (
     <nav className="flex items-center justify-between w-full px-6 py-8 md:px-12 md:py-10">
       {onLogoClick ? (
@@ -27,14 +27,12 @@ export default function Navbar({
         </Link>
       )}
 
-      <button
-        type="button"
-        onClick={() => navigate(profilePath)}
-        className="flex items-center m-0 font-semibold text-custom2 cursor-pointer hover:text-custom1 transition focus:outline-none"
-      >
-        <span className="px-3 md:px-4 text-lg md:text-xl">{username}</span>
-        <FaUser className="text-xl md:text-2xl" />
-      </button>
+      {showProfile && (
+        <ProfileButton
+          nama={nama || username}
+          profilePath={profilePath}
+        />
+      )}
     </nav>
   );
 }

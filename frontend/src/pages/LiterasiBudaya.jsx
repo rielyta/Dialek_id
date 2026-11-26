@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaCheck, FaLock, FaUser } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { FaCheck, FaLock } from "react-icons/fa";
+import Navbar from "../components/Layout/Navbar";
+import Sidebar from "../components/Layout/Sidebar";
 import {
   ambilDaftarLiterasi,
   ambilDetailLiterasi,
-  ambilUsername,
   tandaiSelesai,
 } from "../service/literasiBudaya";
 
 const KARTU_PER_HALAMAN = 2;
 
-// Isi konten dipisah per paragraf (baris kosong), lalu dikelompokkan 2 kartu per halaman.
 function bagiHalaman(isi) {
   const paragraf = String(isi || "")
     .split(/\n\s*\n/)
@@ -21,22 +21,6 @@ function bagiHalaman(isi) {
     halaman.push(paragraf.slice(i, i + KARTU_PER_HALAMAN));
   }
   return halaman;
-}
-
-function Header({ username }) {
-  return (
-    <nav className="flex items-center justify-between w-full px-6 py-8 md:px-12 md:py-10">
-      <Link to="/dashboard-batak" className="logo font-irish m-0 text-2xl hover:opacity-80 transition">
-        dialek.id
-      </Link>
-      <div className="flex items-center font-semibold text-custom2">
-        <span className="px-3 md:px-4 text-base md:text-xl" data-testid="username">
-          {username || "Pengguna"}
-        </span>
-        <FaUser className="text-xl md:text-2xl" />
-      </div>
-    </nav>
-  );
 }
 
 function Pesan({ teks, aksi, labelAksi }) {
@@ -52,7 +36,6 @@ function Pesan({ teks, aksi, labelAksi }) {
   );
 }
 
-// ---------------------------------------------------------------- Peta level (roadmap)
 function PetaLevel({ daftar, levelBudaya, catatan, onBuka }) {
   const jumlahSelesai = daftar.filter((k) => k.selesai).length;
 
@@ -231,7 +214,7 @@ function BacaLevel({ kontenId, onKembali, onSelesai, onGalatSesi }) {
 // ---------------------------------------------------------------- Halaman utama
 export default function LiterasiBudaya() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [daftar, setDaftar] = useState([]);
   const [memuat, setMemuat] = useState(true);
   const [galat, setGalat] = useState("");
@@ -256,7 +239,6 @@ export default function LiterasiBudaya() {
 
   useEffect(() => {
     muatDaftar();
-    ambilUsername().then((u) => u && setUsername(u));
   }, [muatDaftar]);
 
   async function setelahSelesai(hasil) {
@@ -267,8 +249,15 @@ export default function LiterasiBudaya() {
   }
 
   return (
-    <div className="bg-custom-radial font-inter flex flex-col min-h-screen">
-      <Header username={username} />
+    <div className="bg-custom-radial font-inter flex flex-col min-h-screen relative">
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      <Navbar onLogoClick={() => setIsSidebarOpen(true)} />
+
       <main className="flex flex-col items-center flex-grow w-11/12 sm:w-4/5 max-w-3xl mx-auto pb-12">
         {terpilih ? (
           <BacaLevel
@@ -284,20 +273,15 @@ export default function LiterasiBudaya() {
         ) : daftar.length === 0 ? (
           <Pesan teks="Belum ada konten Literasi Budaya." />
         ) : (
-          <>
-            <div className="self-start">
-              <button
-                type="button"
-                onClick={() => navigate("/dashboard-batak")}
-                aria-label="Kembali ke dasbor"
-                title="Kembali ke dasbor"
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-custom1 text-white hover:opacity-80 transition"
-              >
-                <FaArrowLeft />
-              </button>
-            </div>
-            <PetaLevel daftar={daftar} levelBudaya={levelBudaya} catatan={catatan} onBuka={(id) => { setCatatan(""); setTerpilih(id); }} />
-          </>
+          <PetaLevel
+            daftar={daftar}
+            levelBudaya={levelBudaya}
+            catatan={catatan}
+            onBuka={(id) => {
+              setCatatan("");
+              setTerpilih(id);
+            }}
+          />
         )}
       </main>
     </div>
