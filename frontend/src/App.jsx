@@ -8,6 +8,8 @@ import LiterasiBudaya from "./pages/LiterasiBudaya";
 import PilihMateri from "./pages/PilihMateri"
 import MateriLayout from "./pages/MateriLayout";
 import Permainan from "./pages/Permainan";
+import Profil from "./pages/Profil";
+import PengaturanAkun from "./pages/PengaturanAkun";
 
 export default function App() {
   return (
@@ -29,6 +31,9 @@ export default function App() {
         <Route path="/pilih-materi" element={<PilihMateri />} />   
         <Route path="/materi/:slug" element={<MateriLayout />} />
         <Route path="/permainan" element={<Permainan />} />
+        <Route path="/profil" element={<Profil />} />
+        <Route path="/profil/pengaturan" element={<PengaturanAkun />} />
+        
       </Routes>
     </BrowserRouter>
   );

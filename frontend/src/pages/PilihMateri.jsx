@@ -1,27 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { FaUser, FaLock, FaBookOpen } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { FaLock, FaBookOpen } from "react-icons/fa";
 import Navbar from "../components/Layout/Navbar";
 import Sidebar from "../components/Layout/Sidebar";
 
-import {
-  MdDashboard,
-  MdForum,
-  MdBook,
-  MdExtension,
-  MdAutoStories,
-  MdLibraryBooks,
-  MdLogout,
-} from "react-icons/md";
-
-const SIDEBAR_MENUS = [
-  { label: "Dasbor", path: "/dashboard-batak", icon: MdDashboard },
-  { label: "Forum Diskusi", path: "/forum-diskusi", icon: MdForum },
-  { label: "Materi", path: "/materi", icon: MdBook },
-  { label: "Permainan", path: "/permainan", icon: MdExtension },
-  { label: "Literasi Budaya", path: "/literasi-budaya", icon: MdAutoStories },
-  { label: "Kosakata", path: "/kosakata", icon: MdLibraryBooks },
-];
 const TOPICS_DATA = [
   { id: "subjek", title: "Subjek", unlocked: true, progress: 0 },
   { id: "kata-kerja", title: "Kata Kerja", unlocked: false, progress: 0 },
@@ -35,58 +17,12 @@ export default function PilihMateri() {
 
   return (
     <div className="bg-custom-radial font-inter flex flex-col min-h-screen relative">
-       <Navbar
-        username="Pengguna"
-        onLogoClick={() => setIsSidebarOpen((prev) => !prev)}
-      />
+      {/* Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
-      <aside
-        className={`fixed top-0 left-0 bg-white w-64 h-full shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between w-full px-8 py-8 md:py-10">
-          <button
-            type="button"
-            onClick={() => setIsSidebarOpen(false)}
-            className="logo font-irish m-0 text-2xl cursor-pointer hover:opacity-80 transition focus:outline-none"
-          >
-            dialek.id
-          </button>
-        </div>
-
-        <ul className="mt-2 space-y-1">
-          {SIDEBAR_MENUS.map((menu) => {
-            const IconComponent = menu.icon;
-            return (
-              <li key={menu.path}>
-                <Link
-                  to={menu.path}
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center space-x-3 px-6 py-3 hover:bg-gray-100 transition"
-                >
-                  <IconComponent className="text-custom1 text-2xl shrink-0" />
-                  <span className="text-black font-medium">{menu.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-
-          <li>
-            <Link
-              to="/auth/login"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center space-x-3 px-6 py-3 hover:bg-gray-100 transition"
-            >
-              <MdLogout className="text-custom1 text-2xl shrink-0" />
-              <span className="text-black font-medium">Keluar</span>
-            </Link>
-          </li>
-        </ul>
-      </aside>
+      <Navbar onLogoClick={() => setIsSidebarOpen(true)} />
 
       {/* Konten Utama */}
       <section className="main flex flex-col mx-auto w-11/12 md:w-4/5 max-w-5xl items-center flex-grow pb-12">

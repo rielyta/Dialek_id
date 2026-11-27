@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   FaCheckCircle,
   FaPlay,
   FaRedo,
   FaSpellCheck,
   FaTimesCircle,
-  FaUser,
 } from "react-icons/fa";
-import { ambilSoal, ambilUsername, kirimJawaban } from "../service/susunKosakata";
+import Navbar from "../components/Layout/Navbar";
+import Sidebar from "../components/Layout/Sidebar";
+import { ambilSoal, kirimJawaban } from "../service/susunKosakata";
 
 export default function LatihanKosaKata() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [mulai, setMulai] = useState(false);
   const [selesai, setSelesai] = useState(false);
   const [riwayat, setRiwayat] = useState([]);
@@ -46,7 +47,6 @@ export default function LatihanKosaKata() {
 
   useEffect(() => {
     muatSoal();
-    ambilUsername().then((u) => u && setUsername(u));
   }, [muatSoal]);
 
   const handleMulai = () => {
@@ -62,18 +62,15 @@ export default function LatihanKosaKata() {
   const penuh = soal && slots.length > 0 && slots.every((n) => n !== null);
   const terjawab = hasil !== null;
 
-  const isi = useCallback(
-    (nomorAbjad) => {
-      setSlots((lama) => {
-        const kosong = lama.indexOf(null);
-        if (kosong === -1 || lama.includes(nomorAbjad)) return lama;
-        const baru = [...lama];
-        baru[kosong] = nomorAbjad;
-        return baru;
-      });
-    },
-    []
-  );
+  const isi = useCallback((nomorAbjad) => {
+    setSlots((lama) => {
+      const kosong = lama.indexOf(null);
+      if (kosong === -1 || lama.includes(nomorAbjad)) return lama;
+      const baru = [...lama];
+      baru[kosong] = nomorAbjad;
+      return baru;
+    });
+  }, []);
 
   const kosongkan = useCallback((posisi) => {
     setSlots((lama) => {
@@ -82,6 +79,7 @@ export default function LatihanKosaKata() {
       return baru;
     });
   }, []);
+
   useEffect(() => {
     if (!mulai || selesai || !soal || terjawab) return undefined;
     function tekan(e) {
@@ -101,7 +99,9 @@ export default function LatihanKosaKata() {
         const kosong = lama.indexOf(null);
         if (kosong === -1) return lama;
         const dipakai = new Set(lama.filter((n) => n !== null));
-        const nomor = soal.hurufAcak.findIndex((h, i) => !dipakai.has(i) && h.toLowerCase() === e.key.toLowerCase());
+        const nomor = soal.hurufAcak.findIndex(
+          (h, i) => !dipakai.has(i) && h.toLowerCase() === e.key.toLowerCase()
+        );
         if (nomor === -1) return lama;
         const baru = [...lama];
         baru[kosong] = nomor;
@@ -131,7 +131,11 @@ export default function LatihanKosaKata() {
       ]);
     } catch (e) {
       if (e.status === 401) return keLogin();
-      setGalatKirim(e.status === 503 ? "Penilaian sedang tidak tersedia. Jawabanmu belum dinilai, coba periksa lagi." : e.message);
+      setGalatKirim(
+        e.status === 503
+          ? "Penilaian sedang tidak tersedia. Jawabanmu belum dinilai, coba periksa lagi."
+          : e.message
+      );
     } finally {
       setMengirim(false);
     }
@@ -161,18 +165,15 @@ export default function LatihanKosaKata() {
       : 0;
 
   return (
-    <div className="bg-custom-radial font-inter flex flex-col min-h-screen">
-      <nav className="flex items-center justify-between w-full px-6 py-8 md:px-12 md:py-10">
-        <Link to="/dashboard-batak" className="logo font-irish m-0 text-2xl hover:opacity-80 transition">
-          dialek.id
-        </Link>
-        <div className="flex items-center font-semibold text-custom2">
-          <span className="px-3 md:px-4 text-base md:text-xl" data-testid="username">
-            {username || "Pengguna"}
-          </span>
-          <FaUser className="text-xl md:text-2xl" />
-        </div>
-      </nav>
+    <div className="bg-custom-radial font-inter flex flex-col min-h-screen relative">
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      {/* Navbar otomatis menampilkan nama pengguna dan tautan ke /profil */}
+      <Navbar onLogoClick={() => setIsSidebarOpen(true)} />
 
       <main className="flex flex-col flex-grow w-11/12 sm:w-4/5 max-w-4xl mx-auto pb-8">
         {!mulai ? (
@@ -337,7 +338,11 @@ export default function LatihanKosaKata() {
                       type="button"
                       disabled={terjawab || nomor === null}
                       onClick={() => kosongkan(i)}
-                      aria-label={nomor === null ? `Kotak ${i + 1} kosong` : `Kotak ${i + 1}: ${soal.hurufAcak[nomor]}. Klik untuk melepas`}
+                      aria-label={
+                        nomor === null
+                          ? `Kotak ${i + 1} kosong`
+                          : `Kotak ${i + 1}: ${soal.hurufAcak[nomor]}. Klik untuk melepas`
+                      }
                       data-testid="kotak"
                       data-isi={nomor === null ? "" : soal.hurufAcak[nomor]}
                       className="flex items-end justify-center w-12 h-14 md:w-14 md:h-16 border-b-2 border-gray-500/70"

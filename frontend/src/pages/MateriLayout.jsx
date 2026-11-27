@@ -11,9 +11,9 @@ const MATERI_DATA = {
       content: `Dalam bahasa Batak Toba, kata ganti orang (subjek) digunakan untuk menunjuk diri sendiri, lawan bicara, maupun orang yang dibicarakan.
 
 Berikut subjek tunggal dalam Bahasa Batak Toba:
-• Ahu = Saya / Aku
-• Ho = Kamu / Engkau
-• Ibana = Dia (tunggal)`,
+- Ahu = Saya / Aku
+- Ho = Kamu / Engkau
+- Ibana = Dia (tunggal)`,
     },
     {
       type: "latihan",
@@ -26,10 +26,10 @@ Berikut subjek tunggal dalam Bahasa Batak Toba:
       title: "Subjek Jamak & Bentuk Sopan",
       content: `Selain subjek tunggal, Bahasa Batak Toba juga membedakan kata ganti jamak dan bentuk sapaan sopan:
 
-• Hita = Kita (termasuk lawan bicara)
-• Hami = Kami (tidak termasuk lawan bicara)
-• Hamu = Kalian / Anda (sopan)
-• Nasida = Mereka`,
+- Hita = Kita (termasuk lawan bicara)
+- Hami = Kami (tidak termasuk lawan bicara)
+- Hamu = Kalian / Anda (sopan)
+- Nasida = Mereka`,
     },
     {
       type: "latihan",
@@ -42,9 +42,9 @@ Berikut subjek tunggal dalam Bahasa Batak Toba:
       title: "Contoh Penggunaan Subjek dalam Kalimat",
       content: `Berikut contoh penerapan subjek dalam kalimat sederhana sehari-hari:
 
-• Mangan do ahu. = Saya sedang makan.
-• Tudia ho lao? = Ke mana kamu pergi?
-• Marjaha buku do nasida. = Mereka sedang membaca buku.`,
+- Mangan do ahu. = Saya sedang makan.
+- Tudia ho lao? = Ke mana kamu pergi?
+- Marjaha buku do nasida. = Mereka sedang membaca buku.`,
     },
     {
       type: "latihan",
@@ -65,11 +65,11 @@ Berikut subjek tunggal dalam Bahasa Batak Toba:
       content: `Kata kerja dalam Bahasa Batak Toba disebut Hata Ulaon, yaitu kata yang menyatakan suatu tindakan atau aktivitas.
 
 Contoh kata kerja sehari-hari:
-• Mangan = Makan
-• Minum = Minum
-• Modom = Tidur
-• Mardalan = Berjalan
-• Marjaha = Membaca`,
+- Mangan = Makan
+- Minum = Minum
+- Modom = Tidur
+- Mardalan = Berjalan
+- Marjaha = Membaca`,
     },
     {
       type: "latihan",
@@ -85,11 +85,11 @@ Contoh kata kerja sehari-hari:
       content: `Kata benda dalam Bahasa Batak Toba disebut Hata Goar, yaitu kata yang merujuk pada benda, tempat, atau sesuatu yang dibendakan.
 
 Contoh kata benda umum:
-• Jabu = Rumah
-• Aek = Air
-• Dalan = Jalan
-• Buku = Buku
-• Indahan = Nasi`,
+- Jabu = Rumah
+- Aek = Air
+- Dalan = Jalan
+- Buku = Buku
+- Indahan = Nasi`,
     },
     {
       type: "latihan",
@@ -104,11 +104,11 @@ Contoh kata benda umum:
       title: "Bilangan (Angka)",
       content: `Berikut adalah penyebutan angka dasar dalam Bahasa Batak Toba:
 
-• Sada = Satu (1)
-• Dua = Dua (2)
-• Tolu = Tiga (3)
-• Opat = Empat (4)
-• Lima = Lima (5)`,
+- Sada = Satu (1)
+- Dua = Dua (2)
+- Tolu = Tiga (3)
+- Opat = Empat (4)
+- Lima = Lima (5)`,
     },
     {
       type: "latihan",
@@ -159,7 +159,7 @@ export default function MateriLayout() {
       setSelectedOption(null);
       setIsChecked(false);
     } else {
-      navigate("/materi");
+      navigate("/pilih-materi");
     }
   };
 
@@ -175,12 +175,13 @@ export default function MateriLayout() {
 
   const handleFeedbackSubmit = (feedbackData) => {
     console.log("Feedback terkirim:", { slug, ...feedbackData });
-    navigate("/materi");
+    navigate("/pilih-materi");
   };
 
   return (
     <div className="bg-custom-radial font-inter flex flex-col min-h-screen">
-      <Navbar username="Pengguna" />
+      {/* Hapus prop username="Pengguna" agar nama lengkap tampil otomatis */}
+      <Navbar />
 
       <section
         id="content-section"

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
+import Navbar from "../components/Layout/Navbar";
+import Sidebar from "../components/Layout/Sidebar";
 import {
-  FaUser,
   FaRobot,
   FaBookOpen,
   FaGamepad,
@@ -12,11 +13,11 @@ import {
 import { auth } from "../service/firebase";
 import ForumDiskusi from "../assets/ForumDiskusi.webp";
 
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export default function DashboardBatak() {
-  const [username, setUsername] = useState("memuat...");
+  const [namaPengguna, setNamaPengguna] = useState("memuat...");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoadingProgress, setIsLoadingProgress] = useState(true);
   const [progress, setProgress] = useState({
     kosakataMingguan: 0,
@@ -53,15 +54,15 @@ export default function DashboardBatak() {
         if (akunRes.ok) {
           const akunJson = await akunRes.json();
           const akun = akunJson.data || {};
-          setUsername(
-            akun.username ||
-              akun.nama ||
+          setNamaPengguna(
+            akun.nama ||
               currentUser.displayName ||
+              akun.username ||
               currentUser.email?.split("@")[0] ||
               "Pengguna"
           );
         } else {
-          setUsername(
+          setNamaPengguna(
             currentUser.displayName ||
               currentUser.email?.split("@")[0] ||
               "Pengguna"
@@ -141,7 +142,7 @@ export default function DashboardBatak() {
             persenLatihan = (selesai / data.progresLatihan.length) * 100;
           }
 
-          // 5. EXP & Progress Bar EXP
+          // EXP & Progress Bar EXP
           let expPoin = 0;
           let expTarget = 100;
           let persenExp = 0;
@@ -175,7 +176,7 @@ export default function DashboardBatak() {
         }
       } catch (error) {
         console.error("Gagal memuat data dashboard:", error);
-        setUsername(
+        setNamaPengguna(
           currentUser.displayName ||
             currentUser.email?.split("@")[0] ||
             "Pengguna"
@@ -190,24 +191,15 @@ export default function DashboardBatak() {
 
   return (
     <div className="bg-custom-radial font-inter flex flex-col min-h-screen relative">
-      {/* Navbar */}
-      <nav className="flex items-center justify-between w-full px-6 py-8 md:px-12 md:py-10">
-        <Link
-          to="/dashboard-batak"
-          className="logo font-irish m-0 text-2xl cursor-pointer hover:opacity-80 transition"
-        >
-          dialek.id
-        </Link>
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
-        <button
-          type="button"
-          onClick={() => navigate("/akun")}
-          className="flex items-center m-0 font-semibold text-custom2 cursor-pointer hover:text-custom1 transition focus:outline-none"
-        >
-          <span className="px-3 md:px-4 text-lg md:text-xl">{username}</span>
-          <FaUser className="text-xl md:text-2xl" />
-        </button>
-      </nav>
+      <Navbar
+        nama={namaPengguna}
+        onLogoClick={() => setIsSidebarOpen(true)}
+      />
 
       {/* Konten Utama */}
       <section className="main flex flex-col mx-auto w-11/12 max-w-6xl flex-grow pb-16">
@@ -412,7 +404,7 @@ export default function DashboardBatak() {
           </div>
         </div>
 
-        {/*CONTENT 4: KOSA KATA */}
+        {/* CONTENT 4: KOSA KATA */}
         <div className="box-custom1 p-6 mt-6 min-h-64 flex items-center">
           <div className="flex flex-col-reverse md:flex-row items-center gap-6 w-full">
             <div className="w-full md:w-2/3 text-center md:text-right flex flex-col justify-center items-center md:items-end">
@@ -441,7 +433,7 @@ export default function DashboardBatak() {
         </div>
       </section>
 
-      {/*  Chatbot Button */}
+      {/* Chatbot Button */}
       <button
         type="button"
         onClick={() => navigate("/chatbot")}
