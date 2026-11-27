@@ -40,13 +40,14 @@ FIREBASE_PROJECT_ID=
 FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY=
 PORT=3000
+FIREBASE_WEB_API_KEY=
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.5-flash-lite
-FUZZY_AMBANG_BATAS=85
+FUZZY_AMBANG_BATAS=80
 CHATBOT_BATAS_WAKTU_MS=2000
 ```
 
-Tiga variabel Firebase diambil dari kunci akun layanan (service account) proyek Firebase. Variabel lainnya opsional dan memakai nilai bawaan seperti di atas.
+Tiga variabel Firebase pertama diambil dari kunci akun layanan (service account) proyek Firebase. `FIREBASE_WEB_API_KEY` adalah Web API Key proyek (Project settings, General) dan wajib untuk login dengan username. Variabel lainnya opsional dan memakai nilai bawaan seperti di atas.
 
 ## Pengujian
 
@@ -55,7 +56,7 @@ cd backend
 npm test
 ```
 
-Perintah ini menjalankan uji unit Fuzzy Match Engine dengan node:test. Uji endpoint dilakukan dengan Postman memakai ID token Firebase (berlaku sekitar satu jam), yang bisa diambil lewat `tools/get-id-token.html`.
+Perintah ini menjalankan 38 uji dengan node:test: Fuzzy Match Engine, login username, dan permainan sambung kata beserta leaderboard. Uji endpoint dilakukan dengan Postman memakai ID token Firebase (berlaku sekitar satu jam), yang bisa diambil lewat `tools/get-id-token.html`.
 
 ## Menjalankan frontend
 
@@ -74,7 +75,23 @@ VITE_FIREBASE_PROJECT_ID=
 VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
+VITE_API_URL=http://localhost:3000
 ```
+
+## Mengisi data awal
+
+Skrip di `backend/scripts` mengisi Firestore memakai kredensial pada `backend/.env`, sehingga data masuk ke proyek Firebase yang sama dengan kredensial itu. Skrip aman dijalankan ulang karena memakai `merge`.
+
+```
+cd backend
+node scripts/seedMateri.js
+node scripts/seedLiterasiBudaya.js
+```
+
+## Deployment
+
+- Frontend: Vercel. Isi `VITE_API_URL` dengan URL backend dan semua variabel `VITE_FIREBASE_*`. Tambahkan domain Vercel ke Firebase Authentication, Settings, Authorized domains.
+- Backend: Render (paket gratis, tidur setelah 15 menit tanpa aktivitas). Isi semua variabel pada `backend/.env` di pengaturan Environment Render.
 
 ## Dokumentasi API
 
