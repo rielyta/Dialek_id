@@ -7,22 +7,27 @@ export default function Navbar({
   onLogoClick,
   profilePath = "/profil",
   showProfile = true,
+  disableLogo = false,
 }) {
+  const logoClass = `logo font-irish m-0 text-2xl focus:outline-none ${
+    disableLogo
+      ? "cursor-default"
+      : "cursor-pointer hover:opacity-80 transition"
+  }`;
+
   return (
     <nav className="flex items-center justify-between w-full px-6 py-8 md:px-12 md:py-10">
-      {onLogoClick ? (
+      {disableLogo || onLogoClick ? (
         <button
           type="button"
-          onClick={onLogoClick}
-          className="logo font-irish m-0 text-2xl cursor-pointer hover:opacity-80 transition focus:outline-none"
+          disabled={disableLogo}
+          onClick={disableLogo ? undefined : onLogoClick}
+          className={logoClass}
         >
           dialek.id
         </button>
       ) : (
-        <Link
-          to="/dashboard-batak"
-          className="logo font-irish m-0 text-2xl cursor-pointer hover:opacity-80 transition"
-        >
+        <Link to="/dashboard-batak" className={logoClass}>
           dialek.id
         </Link>
       )}
@@ -31,6 +36,7 @@ export default function Navbar({
         <ProfileButton
           nama={nama || username}
           profilePath={profilePath}
+          disabled={disableLogo}
         />
       )}
     </nav>
