@@ -2,9 +2,11 @@
 
 Base URL (lokal): `http://localhost:3000`
 
+Base URL (produksi): `https://dialek-backend.onrender.com`. Paket gratis Render tidur setelah 15 menit tanpa aktivitas, sehingga permintaan pertama sesudahnya bisa memakan sekitar satu menit. Buka `/health` lebih dulu untuk membangunkan server.
+
 ## Konvensi Umum
 
-- Semua endpoint di bawah `/api/*` wajib header `Authorization: Bearer <firebaseIdToken>`, kecuali `/health`.
+- Semua endpoint di bawah `/api/*` wajib header `Authorization: Bearer <firebaseIdToken>`, kecuali `/health` dan `POST /api/akun/masuk`.
 - Format body request dan response: JSON.
 - Response sukses:
   ```json
@@ -18,9 +20,10 @@ Base URL (lokal): `http://localhost:3000`
   - `200 OK`, `201 Created`
   - `400 Bad Request` - input tidak valid
   - `401 Unauthorized` - token tidak ada atau tidak valid
-  - `403 Forbidden` - aksi belum diizinkan (contoh: rating sebelum mengerjakan latihan)
+  - `403 Forbidden` - aksi belum diizinkan (contoh: rating sebelum mengerjakan latihan, atau `ReauthRequired` saat mengubah e-mail atau kata sandi tanpa login terbaru)
   - `404 Not Found` - data atau endpoint tidak ditemukan
   - `409 Conflict` - data sudah ada atau bentrok (username, email)
+  - `429 Too Many Requests` - terlalu banyak percobaan login (POST /api/akun/masuk)
   - `500 Internal Server Error`
   - `503 Service Unavailable` - layanan pendukung tidak merespons (Fuzzy Match Engine)
 
@@ -89,6 +92,11 @@ Buat profil pengguna di Firestore setelah akun dibuat di Firebase Authentication
 
 Ubah data akun (FR-03). Hanya field yang dikirim yang diubah. `email` dan `password` ikut diperbarui di Firebase Authentication. `password` tidak pernah dikembalikan di respons.
 
+Aturan keamanan:
+- Mengubah `email` atau `password` hanya diterima bila pengguna baru saja membuktikan identitasnya, yaitu `auth_time` pada ID token tidak lebih dari 300 detik yang lalu. Frontend melakukannya dengan reautentikasi (kata sandi saat ini untuk akun e-mail, atau popup Google untuk akun Google), lalu mengambil ID token baru (`getIdToken(true)`). Bila tidak, server menjawab `403 ReauthRequired`.
+- E-mail akun yang terdaftar melalui Google (`provider: "google"`) tidak dapat diubah. Akun Google tetap dapat menambahkan `password` sehingga dapat masuk dengan Google maupun dengan e-mail dan kata sandi.
+- Perubahan `username` dan `nama` tidak memerlukan konfirmasi identitas.
+
 **Auth:** wajib
 
 **Request (semua field opsional, minimal satu):**
@@ -104,6 +112,16 @@ Ubah data akun (FR-03). Hanya field yang dikirim yang diubah. `email` dan `passw
 **Response 200:** sama seperti respons GET /api/akun.
 
 **Response 400:** format email tidak valid, password kurang dari 6 karakter, field kosong, atau tidak ada field yang dikirim.
+
+**Response 400 (EmailTerkunci):** akun terdaftar melalui Google dan `email` dikirim berbeda dari e-mail saat ini.
+```json
+{ "error": "EmailTerkunci", "message": "E-mail akun yang terdaftar melalui Google tidak dapat diubah." }
+```
+
+**Response 403 (ReauthRequired):** `email` atau `password` dikirim, tetapi login terakhir lebih dari 5 menit yang lalu.
+```json
+{ "error": "ReauthRequired", "message": "Konfirmasi identitasmu terlebih dahulu untuk mengubah e-mail atau kata sandi." }
+```
 
 **Response 404:** profil belum dibuat (gunakan POST /api/akun).
 
@@ -121,6 +139,37 @@ Hapus akun sendiri (FR-04): akun di Firebase Authentication, profil, serta progr
 ```json
 { "data": { "message": "Akun berhasil dihapus." } }
 ```
+
+---
+
+## POST /api/akun/masuk
+
+Login dengan username dan kata sandi (FR-02). Endpoint publik, tidak memakai header `Authorization`. Server mencari akun pemilik username, memverifikasi kata sandinya lewat Firebase Authentication, lalu mengembalikan `customToken` untuk dipakai klien pada `signInWithCustomToken`. E-mail pengguna tidak pernah muncul di respons. Username tidak membedakan huruf besar dan kecil.
+
+Memerlukan variabel `FIREBASE_WEB_API_KEY` di server.
+
+**Auth:** tidak perlu
+
+**Request:**
+```json
+{ "username": "desi", "password": "rahasia123" }
+```
+
+**Response 200:**
+```json
+{ "data": { "customToken": "eyJhbGciOi..." } }
+```
+
+**Response 400:** `username` atau `password` kosong, bukan teks, atau lebih dari 100 karakter.
+
+**Response 401:** username tidak dikenal atau kata sandi salah. Pesannya sama untuk kedua kasus agar username tidak bisa ditebak.
+```json
+{ "error": "Unauthorized", "message": "Username atau kata sandi salah." }
+```
+
+**Response 429:** Firebase membatasi percobaan login (`TooManyRequests`).
+
+**Response 500:** `FIREBASE_WEB_API_KEY` belum diisi, atau layanan autentikasi tidak dapat dihubungi.
 
 ---
 
