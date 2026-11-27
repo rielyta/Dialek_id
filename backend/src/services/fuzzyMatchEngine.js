@@ -1,4 +1,4 @@
-const AMBANG_BATAS = Number(process.env.FUZZY_AMBANG_BATAS) || 85;
+const AMBANG_BATAS = Number(process.env.FUZZY_AMBANG_BATAS) || 80;
 
 function normalisasiTeks(teks) {
   return String(teks).toLowerCase().trim().replace(/\s+/g, " ");
