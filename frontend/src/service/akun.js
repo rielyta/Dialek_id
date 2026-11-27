@@ -105,6 +105,8 @@ export async function konfirmasiIdentitas({ provider, email, kataSandi }) {
       const kredensial = EmailAuthProvider.credential(surel, kataSandi);
       await reauthenticateWithCredential(pengguna, kredensial);
     }
+    // Ambil token baru supaya waktu login terbarunya (auth_time) ikut diperbarui.
+    await pengguna.getIdToken(true);
   } catch (err) {
     throw new GalatApi(401, pesanGalatFirebase(err));
   }
