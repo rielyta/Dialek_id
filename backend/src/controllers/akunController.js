@@ -140,6 +140,15 @@ async function updateAkun(req, res) {
     }
     const lama = doc.data();
 
+    // E-mail akun Google dikunci agar tetap sama dengan e-mail Google pemiliknya.
+    const emailBerubah = email !== undefined && String(email).trim() !== (lama.email || "");
+    if (emailBerubah && lama.provider === "google") {
+      return res.status(400).json({
+        error: "EmailTerkunci",
+        message: "E-mail akun yang terdaftar melalui Google tidak dapat diubah.",
+      });
+    }
+
     if ((email !== undefined || password !== undefined) && !loginTerbaru(req.user)) {
       return res.status(403).json({
         error: "ReauthRequired",
