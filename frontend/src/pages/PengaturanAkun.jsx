@@ -116,6 +116,73 @@ function DialogHapus({ provider, sedangProses, galat, onBatal, onKonfirmasi }) {
   );
 }
 
+// Jendela konfirmasi identitas sebelum e-mail atau kata sandi diubah.
+function DialogKonfirmasi({ provider, sedangProses, galat, onBatal, onKonfirmasi }) {
+  const [kataSandi, setKataSandi] = useState("");
+  const pakaiGoogle = provider === "google";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="judul-konfirmasi"
+      data-testid="dialog-konfirmasi"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <h2 id="judul-konfirmasi" className="text-lg font-bold text-custom2">
+          Konfirmasi identitas
+        </h2>
+        <p className="mt-2 text-sm text-gray-700">
+          {pakaiGoogle
+            ? "Demi keamanan, kamu akan diminta masuk dengan Google sekali lagi untuk menyimpan perubahan."
+            : "Demi keamanan, masukkan kata sandimu saat ini untuk menyimpan perubahan e-mail atau kata sandi."}
+        </p>
+
+        {!pakaiGoogle && (
+          <div className="mt-4">
+            <Isian
+              id="kata-sandi-saat-ini"
+              label="Kata sandi saat ini"
+              type="password"
+              value={kataSandi}
+              onChange={(e) => setKataSandi(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+        )}
+
+        {galat && (
+          <p className="mt-3 text-sm text-custom4" role="alert" data-testid="galat-konfirmasi">
+            {galat}
+          </p>
+        )}
+
+        <div className="mt-5 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onBatal}
+            disabled={sedangProses}
+            className="px-4 py-2 rounded-full border border-custom1 text-custom1 text-sm font-medium hover:bg-custom9 transition disabled:opacity-50"
+            data-testid="tombol-batal-konfirmasi"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={() => onKonfirmasi(kataSandi)}
+            disabled={sedangProses || (!pakaiGoogle && kataSandi === "")}
+            className="px-4 py-2 rounded-full bg-gradient-to-b from-[#3E9B63] to-[#177B49] text-white text-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+            data-testid="tombol-konfirmasi-identitas"
+          >
+            {sedangProses ? "Memeriksa..." : pakaiGoogle ? "Lanjut dengan Google" : "Konfirmasi"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PengaturanAkun() {
   const navigate = useNavigate();
   const [akun, setAkun] = useState(null);
@@ -129,6 +196,11 @@ export default function PengaturanAkun() {
 
   const [menyimpan, setMenyimpan] = useState(false);
   const [pesan, setPesan] = useState(null); 
+
+  const [dialogKonfirmasi, setDialogKonfirmasi] = useState(false);
+  const [perubahanTertunda, setPerubahanTertunda] = useState(null);
+  const [mengonfirmasi, setMengonfirmasi] = useState(false);
+  const [galatKonfirmasi, setGalatKonfirmasi] = useState("");
 
   const [dialogHapus, setDialogHapus] = useState(false);
   const [menghapus, setMenghapus] = useState(false);
@@ -181,25 +253,36 @@ export default function PengaturanAkun() {
     if (namaBersih !== (akun.nama || "")) perubahan.nama = namaBersih;
     if (usernameBersih !== (akun.username || "")) perubahan.username = usernameBersih;
 
-    if (!akunGoogle) {
-      if (emailBersih !== (akun.email || "")) {
-        if (!FORMAT_EMAIL.test(emailBersih)) {
-          return setPesan({ jenis: "galat", teks: "Format e-mail tidak valid." });
-        }
-        perubahan.email = emailBersih;
+    // E-mail akun Google dikunci; kata sandi boleh dibuat atau diubah oleh semua akun (FR-03).
+    if (!akunGoogle && emailBersih !== (akun.email || "")) {
+      if (!FORMAT_EMAIL.test(emailBersih)) {
+        return setPesan({ jenis: "galat", teks: "Format e-mail tidak valid." });
       }
-      if (kataSandi !== "") {
-        if (kataSandi.length < 6) {
-          return setPesan({ jenis: "galat", teks: "Kata sandi minimal 6 karakter." });
-        }
-        perubahan.password = kataSandi;
+      perubahan.email = emailBersih;
+    }
+    if (kataSandi !== "") {
+      if (kataSandi.length < 6) {
+        return setPesan({ jenis: "galat", teks: "Kata sandi minimal 6 karakter." });
       }
+      perubahan.password = kataSandi;
     }
 
     if (Object.keys(perubahan).length === 0) {
       return setPesan({ jenis: "galat", teks: "Belum ada perubahan untuk disimpan." });
     }
 
+    // Mengubah e-mail atau kata sandi wajib didahului konfirmasi identitas.
+    if (perubahan.email !== undefined || perubahan.password !== undefined) {
+      setGalatKonfirmasi("");
+      setPerubahanTertunda(perubahan);
+      setDialogKonfirmasi(true);
+      return;
+    }
+
+    await terapkanPerubahan(perubahan);
+  };
+
+  const terapkanPerubahan = async (perubahan) => {
     setMenyimpan(true);
     try {
       const terbaru = await ubahAkun(perubahan);
@@ -226,6 +309,28 @@ export default function PengaturanAkun() {
     } finally {
       setMenyimpan(false);
     }
+  };
+
+  const konfirmasiUbah = async (kataSandiKonfirmasi) => {
+    if (!akun || !perubahanTertunda || mengonfirmasi) return;
+    setGalatKonfirmasi("");
+    setMengonfirmasi(true);
+    try {
+      await konfirmasiIdentitas({
+        provider: akun.provider,
+        email: akun.email,
+        kataSandi: kataSandiKonfirmasi,
+      });
+    } catch (err) {
+      setGalatKonfirmasi(err?.message || "Konfirmasi identitas gagal.");
+      setMengonfirmasi(false);
+      return;
+    }
+    const perubahan = perubahanTertunda;
+    setDialogKonfirmasi(false);
+    setPerubahanTertunda(null);
+    setMengonfirmasi(false);
+    await terapkanPerubahan(perubahan);
   };
 
   const konfirmasiHapus = async (kataSandiKonfirmasi) => {
@@ -318,15 +423,14 @@ export default function PengaturanAkun() {
                 type="password"
                 value={kataSandi}
                 onChange={(e) => setKataSandi(e.target.value)}
-                disabled={akunGoogle}
-                placeholder={akunGoogle ? "Dikelola oleh Google" : "Kosongkan bila tidak diubah"}
+                placeholder={akunGoogle ? "Buat kata sandi untuk login dengan e-mail" : "Kosongkan bila tidak diubah"}
                 autoComplete="new-password"
               />
             </div>
 
             {akunGoogle && (
               <p className="w-full text-xs text-custom2" data-testid="catatan-google">
-                Akun terdaftar melalui Google. e-mail dan kata sandi diatur pada akun Google.
+                Akun terdaftar melalui Google, jadi e-mail mengikuti akun Google dan tidak dapat diubah. Kamu tetap bisa masuk dengan Google. Mengisi kata sandi di sini menambahkan opsi masuk dengan e-mail Google tersebut dan kata sandi.
               </p>
             )}
 
@@ -364,6 +468,19 @@ export default function PengaturanAkun() {
           </form>
         )}
       </main>
+
+      {dialogKonfirmasi && akun && (
+        <DialogKonfirmasi
+          provider={akun.provider}
+          sedangProses={mengonfirmasi}
+          galat={galatKonfirmasi}
+          onBatal={() => {
+            setDialogKonfirmasi(false);
+            setPerubahanTertunda(null);
+          }}
+          onKonfirmasi={konfirmasiUbah}
+        />
+      )}
 
       {dialogHapus && akun && (
         <DialogHapus
