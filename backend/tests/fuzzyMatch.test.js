@@ -37,6 +37,6 @@ test("jarak Levenshtein dasar", () => {
   assert.strictEqual(jarakLevenshtein("kitten", "sitting"), 3);
 });
 
-test("ambang batas default 85", () => {
-  assert.strictEqual(AMBANG_BATAS, 85);
+test("ambang batas default 80", () => {
+  assert.strictEqual(AMBANG_BATAS, 80);
 });
