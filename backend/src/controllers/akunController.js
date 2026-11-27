@@ -4,6 +4,8 @@ const { FieldValue } = require("firebase-admin/firestore");
 const LEVEL_AWAL = "Pemula";
 const FORMAT_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UKURAN_BATCH = 400;
+// Perubahan email atau kata sandi hanya diterima bila pengguna baru saja membuktikan identitasnya.
+const BATAS_LOGIN_TERBARU_DETIK = 300;
 
 function ambilProvider(user) {
   const p = user.firebase && user.firebase.sign_in_provider;
@@ -17,6 +19,12 @@ function badRequest(res, message) {
 function serverError(res, nama, err) {
   console.error(`[akunController.${nama}]`, err);
   return res.status(500).json({ error: "InternalServerError", message: err.message });
+}
+
+function loginTerbaru(user) {
+  const authTime = Number(user && user.auth_time);
+  if (!authTime) return false;
+  return Math.floor(Date.now() / 1000) - authTime <= BATAS_LOGIN_TERBARU_DETIK;
 }
 
 function teksValid(nilai) {
@@ -132,6 +140,13 @@ async function updateAkun(req, res) {
     }
     const lama = doc.data();
 
+    if ((email !== undefined || password !== undefined) && !loginTerbaru(req.user)) {
+      return res.status(403).json({
+        error: "ReauthRequired",
+        message: "Konfirmasi identitasmu terlebih dahulu untuk mengubah e-mail atau kata sandi.",
+      });
+    }
+
     const dataUpdate = {};
     const authUpdate = {};
 
@@ -223,4 +238,4 @@ async function hapusAkun(req, res) {
   }
 }
 
-module.exports = { getAkun, buatAkun, updateAkun, hapusAkun };
+module.exports = { getAkun, buatAkun, updateAkun, hapusAkun, loginTerbaru };
