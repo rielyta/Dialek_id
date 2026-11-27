@@ -11,6 +11,7 @@ import MateriLayout from "./pages/MateriLayout";
 import Permainan from "./pages/Permainan";
 import Profil from "./pages/Profil";
 import PengaturanAkun from "./pages/PengaturanAkun";
+import Chatbot from "./pages/Chatbot";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/permainan" element={<Permainan />} />
         <Route path="/profil" element={<Profil />} />
         <Route path="/profil/pengaturan" element={<PengaturanAkun />} />
+        <Route path="/chatbot" element={<Chatbot />} />
         
       </Routes>
     </BrowserRouter>
