@@ -8,6 +8,10 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
+app.get("/", (req, res) => {
+  res.json({ status: "ok", service: "dialek-backend", health: "/health" });
+});
+
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
