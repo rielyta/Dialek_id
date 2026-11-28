@@ -1,4 +1,4 @@
-const { Timestamp } = require("firebase-admin/firestore");
+const { Timestamp, FieldValue } = require("firebase-admin/firestore");
 const { db } = require("../config/firebaseAdmin");
 const {
   normalisasiKata,
@@ -130,6 +130,13 @@ async function akhiriDalamTransaksi(tx, ref, data, uid, alasan, tambahan = {}) {
   const leaderboard = await siapkanLeaderboard(tx, uid, sesiAkhir.skor);
   tx.update(ref, { ...tambahan, status: sesiAkhir.status, alasanSelesai: alasan, waktuSelesai: sesiAkhir.waktuSelesai });
   if (leaderboard) leaderboard.tulis();
+
+  // Tambah EXP berdasarkan skor akhir permainan
+  if (sesiAkhir.skor > 0) {
+    const userRef = db.collection("Users").doc(uid);
+    tx.update(userRef, { expPoin: FieldValue.increment(sesiAkhir.skor) });
+  }
+
   return { sesiAkhir, rekorBaru: leaderboard ? leaderboard.rekorBaru : false };
 }
 

@@ -1,4 +1,5 @@
 const { db } = require("../config/firebaseAdmin");
+const { FieldValue } = require("firebase-admin/firestore");
 const { AMBANG_BATAS, nilaiJawaban } = require("../services/fuzzyMatchEngine");
 
 function acakHuruf(kata) {
@@ -87,6 +88,12 @@ async function jawabSoal(req, res) {
         skor: penilaian.skor,
         diperbaruiPada: new Date().toISOString(),
       });
+
+      // Tambah EXP: +5 jika jawaban benar
+      if (penilaian.benar) {
+        const userRef = db.collection("Users").doc(uid);
+        await userRef.update({ expPoin: FieldValue.increment(5) });
+      }
     } catch (errSimpan) {
       console.error("[susunKosakataController.jawabSoal] gagal menyimpan hasil:", errSimpan);
       tersimpan = false;

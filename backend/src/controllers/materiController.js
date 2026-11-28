@@ -1,4 +1,5 @@
 const { db } = require("../config/firebaseAdmin");
+const { FieldValue } = require("firebase-admin/firestore");
 
 async function getDaftarMateri(req, res) {
   try {
@@ -242,6 +243,12 @@ async function jawabLatihan(req, res) {
     let tersimpan = true;
     try {
       await batch.commit();
+
+      // Tambah EXP: +10 per jawaban benar
+      if (jumlahBenar > 0) {
+        const userRef = db.collection("Users").doc(uid);
+        await userRef.update({ expPoin: FieldValue.increment(jumlahBenar * 10) });
+      }
     } catch (errSimpan) {
       console.error("[materiController.jawabLatihan] gagal menyimpan hasil:", errSimpan);
       tersimpan = false;

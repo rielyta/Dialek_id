@@ -1,4 +1,5 @@
 const { db } = require("../config/firebaseAdmin");
+const { FieldValue } = require("firebase-admin/firestore");
 
 const KOLEKSI_LITERASI = "LiterasiBudaya";
 
@@ -100,7 +101,13 @@ async function tandaiSelesai(req, res) {
       const daftar = baru ? [...lama, id] : lama;
       const levelBudaya = hitungLevelBudaya(daftar.length);
 
-      if (baru) t.update(userRef, { literasiSelesai: daftar, levelBudaya });
+      if (baru) {
+        t.update(userRef, {
+          literasiSelesai: daftar,
+          levelBudaya,
+          expPoin: FieldValue.increment(15),
+        });
+      }
 
       return { kontenId: id, baru, jumlahSelesai: daftar.length, levelBudaya };
     });
