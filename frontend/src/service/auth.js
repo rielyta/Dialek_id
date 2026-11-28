@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
+  deleteUser,
   signOut,
 } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
@@ -40,7 +41,7 @@ function generateUsername(nama, email, suffix = "") {
       .trim()
       .replace(/[^a-z0-9_]+/g, "_")
       .replace(/^_+|_+$/g, "")
-      .slice(0, 20) || "pengguna";
+      .slice(0, 16) || "pengguna";
 
   return suffix ? `${cleanBase}_${suffix}` : cleanBase;
 }
@@ -66,14 +67,13 @@ async function fetchBackendProfile(token) {
 }
 
 async function createBackendProfile(token, nama, email, customUsername = "") {
+  const usernameManual = customUsername.trim().toLowerCase();
+  const maxAttempt = usernameManual ? 1 : 4;
   let attempt = 0;
 
-  while (attempt < 4) {
+  while (attempt < maxAttempt) {
     const suffix = attempt === 0 ? "" : Math.floor(100 + Math.random() * 900);
-    const username =
-      customUsername && attempt === 0
-        ? customUsername
-        : generateUsername(nama, email, suffix);
+    const username = usernameManual || generateUsername(nama, email, suffix);
 
     const res = await fetch(`${API_BASE_URL}/api/akun`, {
       method: "POST",
@@ -97,6 +97,11 @@ async function createBackendProfile(token, nama, email, customUsername = "") {
       const msg = (payload.message || "").toLowerCase();
       if (msg.includes("profil")) {
         return fetchBackendProfile(token);
+      }
+      if (usernameManual) {
+        throw new Error(
+          payload.message || "Username sudah digunakan. Silakan pilih username lain."
+        );
       }
       attempt += 1;
       continue;
@@ -133,7 +138,10 @@ async function loginWithUsername(username, password) {
   const res = await fetch(`${API_BASE_URL}/api/akun/masuk`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({
+      username: username.trim().toLowerCase(),
+      password,
+    }),
   });
 
   const payload = await res.json().catch(() => ({}));
@@ -143,9 +151,15 @@ async function loginWithUsername(username, password) {
       return { success: false, message: "Username atau kata sandi salah." };
     }
     if (res.status === 429) {
-      return { success: false, message: "Terlalu banyak percobaan masuk. Coba lagi beberapa saat." };
+      return {
+        success: false,
+        message: "Terlalu banyak percobaan masuk. Coba lagi beberapa saat.",
+      };
     }
-    return { success: false, message: payload.message || "Terjadi kesalahan saat masuk." };
+    return {
+      success: false,
+      message: payload.message || "Terjadi kesalahan saat masuk.",
+    };
   }
 
   const credential = await signInWithCustomToken(auth, payload.data.customToken);
@@ -155,20 +169,28 @@ async function loginWithUsername(username, password) {
 
 export async function loginManual({ identifier, password }) {
   try {
-    if (isEmail(identifier)) {
-      const credential = await signInWithEmailAndPassword(auth, identifier, password);
+    const cleanIdentifier = (identifier || "").trim();
+    if (isEmail(cleanIdentifier)) {
+      const credential = await signInWithEmailAndPassword(
+        auth,
+        cleanIdentifier,
+        password
+      );
       const profile = await syncUserWithBackend(credential.user);
       return { success: true, user: credential.user, profile };
     }
-    return await loginWithUsername(identifier, password);
+    return await loginWithUsername(cleanIdentifier, password);
   } catch (error) {
     return { success: false, message: getFriendlyErrorMessage(error) };
   }
 }
 
 export async function registerManual({ nama, email, password, username }) {
+  let createdUser = null;
+
   try {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
+    createdUser = credential.user;
 
     if (nama) {
       await updateProfile(credential.user, { displayName: nama });
@@ -177,16 +199,17 @@ export async function registerManual({ nama, email, password, username }) {
     const profile = await syncUserWithBackend(credential.user, { nama, username });
     return { success: true, user: credential.user, profile };
   } catch (error) {
+    // Hapus akun Firebase jika penyimpanan profil ke backend gagal agar user bisa daftar ulang
+    if (createdUser) {
+      await deleteUser(createdUser).catch(() => {});
+    }
     return { success: false, message: getFriendlyErrorMessage(error) };
   }
 }
 
-export async function authWithSocial(providerName) {
+export async function authWithSocial() {
   try {
-    const provider =
-      providerName === "facebook" ? facebookProvider : googleProvider;
-
-    const credential = await signInWithPopup(auth, provider);
+    const credential = await signInWithPopup(auth, googleProvider);
     const profile = await syncUserWithBackend(credential.user);
     return { success: true, user: credential.user, profile };
   } catch (error) {

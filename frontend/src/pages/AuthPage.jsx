@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { HiMail, HiLockClosed, HiUser, HiClock, HiX } from "react-icons/hi";
+import {
+  HiAtSymbol,
+  HiMail,
+  HiLockClosed,
+  HiUser,
+  HiClock,
+  HiX,
+} from "react-icons/hi";
 import FormInput from "../components/auth/FormInput";
 import SocialButtons from "../components/auth/SocialButtons";
 import {
   loginManual,
   registerManual,
   authWithSocial,
-  logout,
 } from "../service/auth";
 
 import jawaImg from "../assets/jawa.webp";
@@ -22,6 +28,8 @@ export default function AuthPage() {
 
   const [formData, setFormData] = useState({
     nama: "",
+    username: "",
+    identifier: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -36,6 +44,8 @@ export default function AuthPage() {
     setErrorMessage("");
     setFormData({
       nama: "",
+      username: "",
+      identifier: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -44,7 +54,11 @@ export default function AuthPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const nextValue =
+      name === "username" || name === "identifier"
+        ? value.replace(/\s+/g, "")
+        : value;
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
   };
 
   const handleSubmit = async (e) => {
@@ -53,8 +67,21 @@ export default function AuthPage() {
     setErrorMessage("");
 
     if (isRegister) {
-      if (!formData.nama.trim() || !formData.email.trim() || !formData.password) {
+      const usernameBersih = formData.username.trim().toLowerCase();
+
+      if (
+        !formData.nama.trim() ||
+        !usernameBersih ||
+        !formData.email.trim() ||
+        !formData.password
+      ) {
         setErrorMessage("Semua kolom wajib diisi.");
+        return;
+      }
+      if (!/^[a-z0-9._]{3,20}$/.test(usernameBersih)) {
+        setErrorMessage(
+          "Username harus 3–20 karakter (huruf kecil, angka, titik, atau garis bawah)."
+        );
         return;
       }
       if (formData.password.length < 6) {
@@ -65,20 +92,26 @@ export default function AuthPage() {
         setErrorMessage("Konfirmasi kata sandi tidak cocok.");
         return;
       }
-    } else if (!formData.email.trim() || !formData.password) {
-      setErrorMessage("E-mail dan kata sandi wajib diisi.");
+    } else if (!formData.identifier.trim() || !formData.password) {
+      setErrorMessage("E-mail atau username dan kata sandi wajib diisi.");
       return;
     }
 
     setIsSubmitting(true);
+    const identifierBersih = formData.identifier.trim();
+    const isEmailInput = identifierBersih.includes("@");
+
     const result = isRegister
       ? await registerManual({
           nama: formData.nama.trim(),
+          username: formData.username.trim().toLowerCase(),
           email: formData.email.trim(),
           password: formData.password,
         })
       : await loginManual({
-          email: formData.email.trim(),
+          identifier: identifierBersih,
+          email: isEmailInput ? identifierBersih : "",
+          username: isEmailInput ? "" : identifierBersih.toLowerCase(),
           password: formData.password,
         });
     setIsSubmitting(false);
@@ -182,29 +215,53 @@ export default function AuthPage() {
               )}
 
               <form onSubmit={handleSubmit}>
-                {isRegister && (
+                {isRegister ? (
+                  <>
+                    <FormInput
+                      label="Nama Lengkap"
+                      id="nama"
+                      name="nama"
+                      type="text"
+                      value={formData.nama}
+                      onChange={handleChange}
+                      icon={HiUser}
+                      disabled={isSubmitting}
+                    />
+
+                    <FormInput
+                      label="Username"
+                      id="username"
+                      name="username"
+                      type="text"
+                      value={formData.username}
+                      onChange={handleChange}
+                      icon={HiAtSymbol}
+                      disabled={isSubmitting}
+                    />
+
+                    <FormInput
+                      label="E-mail"
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      icon={HiMail}
+                      disabled={isSubmitting}
+                    />
+                  </>
+                ) : (
                   <FormInput
-                    label="Nama Lengkap"
-                    id="nama"
-                    name="nama"
+                    label="E-mail atau Username"
+                    id="identifier"
+                    name="identifier"
                     type="text"
-                    value={formData.nama}
+                    value={formData.identifier}
                     onChange={handleChange}
                     icon={HiUser}
                     disabled={isSubmitting}
                   />
                 )}
-
-                <FormInput
-                  label="E-mail"
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  icon={HiMail}
-                  disabled={isSubmitting}
-                />
 
                 <FormInput
                   label="Kata Sandi"

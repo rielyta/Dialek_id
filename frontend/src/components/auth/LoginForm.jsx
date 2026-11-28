@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { HiMail, HiLockClosed } from "react-icons/hi";
+import { HiUser, HiLockClosed } from "react-icons/hi";
 import FormInput from "./FormInput";
 import { loginManual } from "../../service/auth";
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const { isLoading, setIsLoading, setErrorMessage } = useOutletContext();
   const navigate = useNavigate();
@@ -14,13 +14,13 @@ export default function LoginForm() {
     e.preventDefault();
     setErrorMessage("");
 
-    if (!email.trim() || !password) {
-      setErrorMessage("E-mail dan kata sandi wajib diisi.");
+    if (!identifier.trim() || !password) {
+      setErrorMessage("Username/e-mail dan kata sandi wajib diisi.");
       return;
     }
 
     setIsLoading(true);
-    const result = await loginManual(email.trim(), password);
+    const result = await loginManual({ identifier: identifier.trim(), password });
     setIsLoading(false);
 
     if (result.success) {
@@ -33,13 +33,13 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit}>
       <FormInput
-        label="E-mail"
-        id="email"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="nama@domain.com"
-        icon={HiMail}
+        label="Username atau E-mail"
+        id="identifier"
+        type="text"
+        value={identifier}
+        onChange={(e) => setIdentifier(e.target.value)}
+        placeholder="username atau nama@domain.com"
+        icon={HiUser}
         disabled={isLoading}
       />
 
