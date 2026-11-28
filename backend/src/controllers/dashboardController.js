@@ -1,4 +1,5 @@
 const { db } = require("../config/firebaseAdmin");
+const { ambilPeringkatPemain } = require("../services/leaderboardService");
 
 const TINGKAT_LEVEL = [
   { nama: "Pemula", minExp: 0 },
@@ -6,6 +7,7 @@ const TINGKAT_LEVEL = [
   { nama: "Mahir", minExp: 300 },
 ];
 const HARI_MINGGUAN = 7;
+const TARGET_KOSAKATA_MINGGUAN = 10;
 
 function hitungBarExp(expPoin) {
   let indeks = 0;
@@ -27,6 +29,13 @@ function hitungBarExp(expPoin) {
     expLevelBerikutnya: berikut.minExp,
     persenExp: persen,
   };
+}
+
+function hitungIndeksLevel(namaLevel) {
+  const idx = TINGKAT_LEVEL.findIndex(
+    (t) => t.nama.toLowerCase() === String(namaLevel).toLowerCase()
+  );
+  return idx >= 0 ? idx + 1 : 0;
 }
 
 async function hitungProgresLatihan(uid) {
@@ -77,8 +86,15 @@ async function hitungKosakataMingguan(uid) {
     }
   });
 
+  const persentase =
+    TARGET_KOSAKATA_MINGGUAN > 0
+      ? Math.min(100, Math.round((jumlah / TARGET_KOSAKATA_MINGGUAN) * 100))
+      : 0;
+
   return {
     jumlahKataMingguIni: jumlah,
+    targetMingguan: TARGET_KOSAKATA_MINGGUAN,
+    persentase,
     skorRataRata: jumlah > 0 ? Math.round((totalSkor / jumlah) * 10) / 10 : 0,
   };
 }
@@ -87,23 +103,31 @@ async function getDashboard(req, res) {
   try {
     const uid = req.user.uid;
 
-    const [userDoc, progresLatihan, kosakataMingguan] = await Promise.all([
+    const [userDoc, progresLatihan, kosakataMingguan, peringkat] = await Promise.all([
       db.collection("Users").doc(uid).get(),
       hitungProgresLatihan(uid),
       hitungKosakataMingguan(uid),
+      ambilPeringkatPemain(uid),
     ]);
 
     const user = userDoc.exists ? userDoc.data() : {};
     const expPoin = Number(user.expPoin) || 0;
     const bar = hitungBarExp(expPoin);
 
+    const namaLevel = user.levelBudaya || TINGKAT_LEVEL[0].nama;
+
     return res.status(200).json({
       data: {
-        levelBudaya: user.levelBudaya || TINGKAT_LEVEL[0].nama,
+        levelBudaya: {
+          nama: namaLevel,
+          angka: hitungIndeksLevel(namaLevel),
+        },
         exp: bar,
         kosakataMingguan,
         progresLatihan,
-        peringkatSambungKata: null,
+        peringkatSambungKata: peringkat
+          ? { peringkat: peringkat.peringkat, skorTertinggi: peringkat.skorTertinggi }
+          : null,
       },
     });
   } catch (err) {
