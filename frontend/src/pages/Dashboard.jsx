@@ -98,13 +98,16 @@ export default function DashboardBatak() {
           }
 
           // Level Budaya (angka)
-          const rawLevelBudaya =
-            typeof data.levelBudaya === "object" && data.levelBudaya !== null
-              ? data.levelBudaya.level ?? data.levelBudaya.angka ?? 0
-              : data.levelBudaya ?? data.level_budaya ?? 0;
-          const levelBudayaAngka = Number.isFinite(Number(rawLevelBudaya))
-            ? Number(rawLevelBudaya)
-            : 0;
+          const LEVEL_MAP = { pemula: 1, menengah: 2, mahir: 3 };
+          let levelBudayaAngka = 0;
+          if (typeof data.levelBudaya === "object" && data.levelBudaya !== null) {
+            levelBudayaAngka = data.levelBudaya.angka ?? data.levelBudaya.level ?? 0;
+          } else if (typeof data.levelBudaya === "string") {
+            levelBudayaAngka = LEVEL_MAP[data.levelBudaya.toLowerCase()] || 0;
+          } else {
+            const raw = data.levelBudaya ?? data.level_budaya ?? 0;
+            levelBudayaAngka = Number.isFinite(Number(raw)) ? Number(raw) : 0;
+          }
 
           // Peringkat Game Sambung Kata (angka)
           const rawPeringkat =

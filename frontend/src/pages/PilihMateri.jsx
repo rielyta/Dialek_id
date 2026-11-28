@@ -46,7 +46,6 @@ export default function PilihMateri() {
             map[kat].completedCount += 1;
           }
 
-          // Gunakan status kunci dari backend jika tersedia
           if (typeof m.unlocked === "boolean") {
             map[kat].unlocked = m.unlocked;
           } else if (typeof m.terbuka === "boolean") {
@@ -132,14 +131,6 @@ export default function PilihMateri() {
                   <span className="text-lg md:text-xl font-semibold text-gray-700 truncate capitalize">
                     {topic.title}
                   </span>
-                  <div className="w-full h-3 bg-gray-200 rounded-md overflow-hidden">
-                    <div
-                      style={{
-                        width: `${Math.min(100, Math.max(0, topic.progress))}%`,
-                      }}
-                      className="progress-bar bg-green-600 h-full transition-all duration-300"
-                    />
-                  </div>
                 </div>
 
                 {topic.unlocked ? (
