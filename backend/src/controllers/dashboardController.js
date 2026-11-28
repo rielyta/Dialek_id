@@ -74,18 +74,23 @@ async function hitungKosakataMingguan(uid) {
   const snap = await db.collection("HasilSusunKosakata").where("uid", "==", uid).get();
 
   const batas = Date.now() - HARI_MINGGUAN * 24 * 60 * 60 * 1000;
-  let jumlah = 0;
+  const kataBenarUnik = new Set();
   let totalSkor = 0;
+  let jumlahBenar = 0;
 
   snap.forEach((doc) => {
     const d = doc.data();
     const waktu = d.diperbaruiPada ? Date.parse(d.diperbaruiPada) : NaN;
-    if (!Number.isNaN(waktu) && waktu >= batas) {
-      jumlah += 1;
-      totalSkor += Number(d.skor) || 0;
+    const skor = Number(d.skor) || 0;
+    // Hanya hitung jawaban benar (skor >= 70) dalam 7 hari terakhir
+    if (!Number.isNaN(waktu) && waktu >= batas && skor >= 70) {
+      kataBenarUnik.add(d.kosakataId);
+      totalSkor += skor;
+      jumlahBenar += 1;
     }
   });
 
+  const jumlah = kataBenarUnik.size;
   const persentase =
     TARGET_KOSAKATA_MINGGUAN > 0
       ? Math.min(100, Math.round((jumlah / TARGET_KOSAKATA_MINGGUAN) * 100))
@@ -95,7 +100,7 @@ async function hitungKosakataMingguan(uid) {
     jumlahKataMingguIni: jumlah,
     targetMingguan: TARGET_KOSAKATA_MINGGUAN,
     persentase,
-    skorRataRata: jumlah > 0 ? Math.round((totalSkor / jumlah) * 10) / 10 : 0,
+    skorRataRata: jumlahBenar > 0 ? Math.round((totalSkor / jumlahBenar) * 10) / 10 : 0,
   };
 }
 
