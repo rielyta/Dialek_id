@@ -179,7 +179,7 @@ export default function MateriLayout() {
 
   return (
     <div className="bg-custom-radial font-inter flex flex-col min-h-screen">
-      <Navbar />
+      <Navbar disableLogo />
 
       <section
         id="content-section"

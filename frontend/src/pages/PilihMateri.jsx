@@ -158,16 +158,6 @@ export default function PilihMateri() {
         )}
       </section>
 
-      {/* Footer */}
-      <footer className="flex items-center justify-between w-full px-4 py-6 mt-auto">
-        <button
-          type="button"
-          onClick={() => navigate("/dashboard-batak")}
-          className="button-custom2 border border-green-700 text-green-800 hover:bg-green-700 hover:text-white font-medium px-6 py-2 rounded-full text-sm mx-4 md:mx-8 transition cursor-pointer"
-        >
-          Kembali
-        </button>
-      </footer>
     </div>
   );
 }

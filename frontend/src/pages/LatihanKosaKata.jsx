@@ -162,8 +162,10 @@ export default function LatihanKosaKata() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      {/* Navbar otomatis menampilkan nama pengguna dan tautan ke /profil */}
-      <Navbar onLogoClick={() => setIsSidebarOpen(true)} />
+      <Navbar
+        onLogoClick={() => setIsSidebarOpen(true)}
+        disableLogo={mulai && !selesai} 
+      />
 
       <main
         className={`flex flex-col flex-grow w-11/12 sm:w-4/5 max-w-4xl mx-auto ${

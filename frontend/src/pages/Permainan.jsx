@@ -13,7 +13,6 @@ import {
   ambilLeaderboard,
 } from "../service/permainan";
 
-// Dipakai sebelum sesi dimulai. Selama dan sesudah bermain, durasi mengikuti jawaban server.
 const DURASI_BAWAAN_DETIK = 60;
 
 const ALASAN_SELESAI = {
@@ -413,12 +412,9 @@ export default function Permainan() {
           onClose={() => setIsSidebarOpen(false)}
         />
 
-        {/* Navbar: logo dan profil terkunci saat permainan berlangsung */}
         <Navbar
+          onLogoClick={() => setIsSidebarOpen(true)}
           disableLogo={sedangBermain}
-          onLogoClick={() => {
-            if (!sedangBermain) setIsSidebarOpen(true);
-          }}
         />
 
       <main className="flex flex-col items-center flex-grow w-11/12 sm:w-4/5 max-w-4xl mx-auto pb-10">

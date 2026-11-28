@@ -12,7 +12,7 @@ import {
 const SIDEBAR_MENUS = [
   { label: "Dasbor", path: "/dashboard-batak", icon: MdDashboard },
   { label: "Forum Diskusi", path: "/forum-diskusi", icon: MdForum },
-  { label: "Materi", path: "/materi", icon: MdBook },
+  { label: "Materi", path: "/pilih-materi", icon: MdBook },
   { label: "Permainan", path: "/permainan", icon: MdExtension },
   { label: "Literasi Budaya", path: "/literasi-budaya", icon: MdAutoStories },
   { label: "Kosakata", path: "/latihan-kosakata", icon: MdLibraryBooks },

@@ -17,17 +17,26 @@ export default function Navbar({
 
   return (
     <nav className="sticky top-0 z-30 flex items-center justify-between w-full px-6 py-6 md:px-12 md:py-8 bg-white/40 backdrop-blur-md">
-      {disableLogo || onLogoClick ? (
+      {disableLogo ? (
+        <span
+          aria-disabled="true"
+          className="logo font-irish m-0 text-2xl select-none cursor-default"
+        >
+          dialek.id
+        </span>
+      ) : onLogoClick ? (
         <button
           type="button"
-          disabled={disableLogo}
-          onClick={disableLogo ? undefined : onLogoClick}
-          className={logoClass}
+          onClick={onLogoClick}
+          className="logo font-irish m-0 text-2xl cursor-pointer hover:opacity-80 transition focus:outline-none"
         >
           dialek.id
         </button>
       ) : (
-        <Link to="/dashboard-batak" className={logoClass}>
+        <Link
+          to="/dashboard-batak"
+          className="logo font-irish m-0 text-2xl cursor-pointer hover:opacity-80 transition"
+        >
           dialek.id
         </Link>
       )}
