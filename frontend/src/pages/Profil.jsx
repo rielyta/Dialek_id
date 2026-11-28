@@ -171,7 +171,11 @@ export default function Profil() {
                   </p>
                   <div className="flex flex-wrap gap-3 mt-4">
                     <Kotak label="Total Exp" nilai={ringkasan?.exp?.expPoin ?? akun.expPoin ?? "-"} testid="kotak-exp" />
-                    <Kotak label="Level" nilai={ringkasan?.levelBudaya || akun.levelBudaya || "-"} testid="kotak-level" />
+                    <Kotak
+                      label="Level"
+                      nilai={ringkasan?.levelBudaya?.nama || ringkasan?.levelBudaya || akun.levelBudaya || "-"}
+                      testid="kotak-level"
+                    />
                     {/* Backend belum mencatat durasi belajar, jadi sementara tampil "-". */}
                     <Kotak label="Durasi Belajar" nilai="-" testid="kotak-durasi" />
                   </div>

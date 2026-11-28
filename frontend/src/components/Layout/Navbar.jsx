@@ -16,7 +16,7 @@ export default function Navbar({
   }`;
 
   return (
-    <nav className="flex items-center justify-between w-full px-6 py-8 md:px-12 md:py-10">
+    <nav className="sticky top-0 z-30 flex items-center justify-between w-full px-6 py-6 md:px-12 md:py-8 bg-white/40 backdrop-blur-md">
       {disableLogo || onLogoClick ? (
         <button
           type="button"
