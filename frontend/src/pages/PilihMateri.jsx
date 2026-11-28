@@ -22,14 +22,18 @@ export default function PilihMateri() {
       .then((data) => {
         if (!aktif) return;
 
-        // Kelompokkan materi berdasarkan kategori dari backend
         const map = {};
-        (data || []).forEach((m) => {
+        (data || []).forEach((m, index) => {
           const kat = m.kategori || "lainnya";
           if (!map[kat]) {
             map[kat] = {
               id: kat,
               title: kat,
+              urutan:
+                Number.isFinite(Number(m.urutan)) && Number(m.urutan) > 0
+                  ? Number(m.urutan)
+                  : index + 1,
+              posisi: index,
               count: 0,
               completedCount: 0,
               unlocked: true,
@@ -38,7 +42,6 @@ export default function PilihMateri() {
 
           map[kat].count += 1;
 
-          // Hitung materi yang sudah selesai jika field status tersedia dari backend
           const isDone = Boolean(
             m.selesai ?? m.completed ?? m.is_completed ?? m.sudahSelesai
           );
@@ -53,7 +56,7 @@ export default function PilihMateri() {
           }
         });
 
-        // Hitung persentase progress & urutkan berdasarkan alfabet
+        // Urutkan kategori mengikuti posisi materi pertamanya dari backend.
         const sorted = Object.values(map)
           .map((item) => ({
             ...item,
@@ -62,7 +65,7 @@ export default function PilihMateri() {
                 ? Math.round((item.completedCount / item.count) * 100)
                 : 0,
           }))
-          .sort((a, b) => a.title.localeCompare(b.title, "id"));
+          .sort((a, b) => a.urutan - b.urutan || a.posisi - b.posisi);
 
         setTopics(sorted);
       })
