@@ -141,19 +141,6 @@ export default function LatihanKosaKata() {
     }
   }
 
-  const handleKembali = () => {
-    // Jika sudah ada minimal 1 soal yang dikerjakan saat sesi aktif, tampilkan rangkuman dulu
-    if (mulai && !selesai && riwayat.length > 0) {
-      setSelesai(true);
-      return;
-    }
-    navigate("/dashboard-batak");
-  };
-
-  const aksiKanan = terjawab ? muatSoal : periksa;
-  const labelKanan = terjawab ? "Selanjutnya" : mengirim ? "Memeriksa..." : "Periksa";
-  const nonaktifKanan = terjawab ? memuat : !penuh || mengirim;
-
   const skor = hasil ? Math.max(0, Math.min(100, Math.round(hasil.skor))) : 0;
 
   // Perhitungan statistik rangkuman
@@ -163,6 +150,9 @@ export default function LatihanKosaKata() {
     totalDikerjakan > 0
       ? Math.round(riwayat.reduce((total, item) => total + item.skor, 0) / totalDikerjakan)
       : 0;
+
+  const tampilkanFooter =
+    selesai || (mulai && !galatSoal && Boolean(soal) && terjawab);
 
   return (
     <div className="bg-custom-radial font-inter flex flex-col min-h-screen relative">
@@ -175,7 +165,11 @@ export default function LatihanKosaKata() {
       {/* Navbar otomatis menampilkan nama pengguna dan tautan ke /profil */}
       <Navbar onLogoClick={() => setIsSidebarOpen(true)} />
 
-      <main className="flex flex-col flex-grow w-11/12 sm:w-4/5 max-w-4xl mx-auto pb-8">
+      <main
+        className={`flex flex-col flex-grow w-11/12 sm:w-4/5 max-w-4xl mx-auto ${
+          tampilkanFooter ? "pb-2" : "pb-8"
+        }`}
+      >
         {!mulai ? (
           /* Halaman Awal */
           <section
@@ -273,7 +267,7 @@ export default function LatihanKosaKata() {
                         </span>
                         {!item.benar && (
                           <span className="ml-2 text-gray-600">
-                            • Benar: <strong className="text-custom2 uppercase">{item.kataBenar}</strong>
+                            - Benar: <strong className="text-custom2 uppercase">{item.kataBenar}</strong>
                           </span>
                         )}
                       </p>
@@ -375,23 +369,32 @@ export default function LatihanKosaKata() {
                   ))}
                 </div>
 
-                {/* Skor kemiripan (fuzzy match) */}
-                <div className="mt-auto pt-12 w-full max-w-xl flex items-center gap-3">
+                {/* Skor kemiripan (fuzzy match) & Button Periksa */}
+                <div className="mt-auto pt-12 w-full max-w-2xl flex items-center gap-3">
                   <div className="relative flex-1 h-10 rounded-lg bg-[#5E9B8B]/40 overflow-hidden" data-testid="bar-skor">
                     <div
                       className="absolute inset-y-0 left-0 bg-[#5E9B8B] transition-all duration-500"
                       style={{ width: `${terjawab ? skor : 100}%` }}
                     />
-                    <span className="relative flex items-center justify-center h-full text-sm font-semibold text-white">
-                      Skor kemiripan (fuzzy match)
+                    <span className="relative flex items-center justify-center h-full text-sm font-semibold text-white px-2 text-center">
+                      Skor kemiripan
                     </span>
                   </div>
                   <div
-                    className="flex items-center justify-center w-16 h-10 rounded-lg border border-gray-400/60 bg-white/60 font-bold text-custom2"
+                    className="flex items-center justify-center w-16 h-10 shrink-0 rounded-lg border border-gray-400/60 bg-white/60 font-bold text-custom2"
                     data-testid="nilai-skor"
                   >
                     {terjawab ? skor : ""}
                   </div>
+                  <button
+                    type="button"
+                    onClick={periksa}
+                    disabled={!penuh || mengirim || terjawab}
+                    data-testid={!terjawab ? "tombol-aksi" : "tombol-periksa"}
+                    className="h-10 px-6 sm:px-7 shrink-0 rounded-full text-sm font-bold text-white bg-gradient-to-b from-custom1 to-custom2 hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  >
+                    {mengirim ? "Memeriksa..." : "Periksa"}
+                  </button>
                 </div>
 
                 <div className="mt-3 min-h-12 text-center text-sm" aria-live="polite">
@@ -412,57 +415,44 @@ export default function LatihanKosaKata() {
             ) : null}
           </section>
         )}
+      </main>
 
-        {/* Navigasi Bawah */}
-        <div className="flex items-center justify-between mt-6">
-          <button
-            type="button"
-            onClick={handleKembali}
-            className="px-6 py-1.5 rounded-full text-sm font-bold text-white bg-gradient-to-b from-custom1 to-custom2 hover:opacity-80 transition cursor-pointer"
-            data-testid="tombol-kembali"
-          >
-            {selesai ? "Kembali ke Dasbor" : "Kembali"}
-          </button>
-
+      {/* Navigasi Bawah  */}
+      {tampilkanFooter && (
+        <footer className="flex items-center justify-end w-full px-6 py-6 md:px-12 mt-auto">
           {selesai ? (
             <button
               type="button"
               onClick={handleMulai}
               data-testid="tombol-latih-lagi"
-              className="inline-flex items-center gap-2 px-6 py-1.5 rounded-full text-sm font-bold text-white bg-gradient-to-b from-custom1 to-custom2 hover:opacity-80 transition cursor-pointer"
+              className="inline-flex items-center gap-2.5 px-7 py-2.5 rounded-full text-sm sm:text-base font-bold text-white bg-gradient-to-b from-custom1 to-custom2 hover:opacity-80 shadow-md transition cursor-pointer"
             >
-              <FaRedo className="text-xs" />
+              <FaRedo className="text-xs sm:text-sm" />
               Latih Lagi
             </button>
           ) : (
-            mulai &&
-            !galatSoal &&
-            soal && (
-              <div className="flex items-center gap-3">
-                {terjawab && (
-                  <button
-                    type="button"
-                    onClick={() => setSelesai(true)}
-                    data-testid="tombol-selesai"
-                    className="px-6 py-1.5 rounded-full text-sm font-bold text-custom2 border border-custom2 bg-white/70 hover:bg-white transition cursor-pointer"
-                  >
-                    Selesai
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={aksiKanan}
-                  disabled={nonaktifKanan}
-                  className="px-6 py-1.5 rounded-full text-sm font-bold text-white bg-gradient-to-b from-custom1 to-custom2 hover:opacity-80 disabled:opacity-50 transition cursor-pointer"
-                  data-testid="tombol-aksi"
-                >
-                  {labelKanan}
-                </button>
-              </div>
-            )
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button
+                type="button"
+                onClick={muatSoal}
+                disabled={memuat}
+                data-testid="tombol-aksi"
+                className="px-7 py-2.5 rounded-full text-sm sm:text-base font-bold text-white bg-gradient-to-b from-custom1 to-custom2 hover:opacity-80 disabled:opacity-50 shadow-md transition cursor-pointer"
+              >
+                Selanjutnya
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelesai(true)}
+                data-testid="tombol-selesai"
+                className="px-7 py-2.5 rounded-full text-sm sm:text-base font-bold text-custom2 border border-custom2 bg-white/70 hover:bg-white shadow-sm transition cursor-pointer"
+              >
+                Selesai
+              </button>
+            </div>
           )}
-        </div>
-      </main>
+        </footer>
+      )}
     </div>
   );
 }

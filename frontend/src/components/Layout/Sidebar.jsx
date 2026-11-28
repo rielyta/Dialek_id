@@ -15,7 +15,7 @@ const SIDEBAR_MENUS = [
   { label: "Materi", path: "/materi", icon: MdBook },
   { label: "Permainan", path: "/permainan", icon: MdExtension },
   { label: "Literasi Budaya", path: "/literasi-budaya", icon: MdAutoStories },
-  { label: "Kosakata", path: "/kosakata", icon: MdLibraryBooks },
+  { label: "Kosakata", path: "/latihan-kosakata", icon: MdLibraryBooks },
 ];
 
 export default function Sidebar({ isOpen, onClose, onLogout }) {
