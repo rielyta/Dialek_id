@@ -53,12 +53,27 @@ function berikanPeringkat(daftarDoc) {
   return hasil;
 }
 
+async function gunakanNamaTerbaru(daftar) {
+  if (daftar.length === 0) return daftar;
+
+  const refs = daftar.map(({ uid }) => db.collection("Users").doc(uid));
+  const pengguna = await db.getAll(...refs);
+
+  return daftar.map((pemain, i) => {
+    const dataPengguna = pengguna[i].exists ? pengguna[i].data() : {};
+    return {
+      ...pemain,
+      nama: dataPengguna.nama ?? dataPengguna.username ?? pemain.nama,
+    };
+  });
+}
+
 async function ambilTop(limit, periode = "semua", tanggal = tanggalHariIni()) {
   const snap = await koleksiPeriode(periode, tanggal)
     .orderBy("skorTertinggi", "desc")
     .limit(limit)
     .get();
-  return berikanPeringkat(snap.docs);
+  return gunakanNamaTerbaru(berikanPeringkat(snap.docs));
 }
 
 // Peringkat satu pemain. Mengembalikan null bila pemain belum punya skor pada periode itu.
@@ -69,12 +84,16 @@ async function ambilPeringkatPemain(uid, periode = "semua", tanggal = tanggalHar
 
   const d = doc.data();
   const skor = Number(d.skorTertinggi) || 0;
-  const lebihTinggi = await koleksi.where("skorTertinggi", ">", skor).count().get();
+  const [lebihTinggi, pengguna] = await Promise.all([
+    koleksi.where("skorTertinggi", ">", skor).count().get(),
+    db.collection("Users").doc(uid).get(),
+  ]);
+  const dataPengguna = pengguna.exists ? pengguna.data() : {};
 
   return {
     peringkat: lebihTinggi.data().count + 1,
     uid,
-    nama: d.nama ?? null,
+    nama: dataPengguna.nama ?? dataPengguna.username ?? d.nama ?? null,
     skorTertinggi: skor,
   };
 }

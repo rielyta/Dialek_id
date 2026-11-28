@@ -24,7 +24,15 @@ function ref(path) {
     },
     update: async (v) => {
       if (!data.has(path)) throw new Error("dokumen tidak ada");
-      data.set(path, { ...data.get(path), ...v });
+      const sebelumnya = data.get(path);
+      const diperbarui = { ...sebelumnya };
+      Object.entries(v).forEach(([k, nilai]) => {
+        diperbarui[k] =
+          nilai && typeof nilai.__increment === "number"
+            ? (Number(sebelumnya[k]) || 0) + nilai.__increment
+            : nilai;
+      });
+      data.set(path, diperbarui);
     },
     collection: (nama) => koleksi(`${path}/${nama}`),
   };
@@ -67,6 +75,7 @@ function koleksi(path) {
 
 const db = {
   collection: (nama) => koleksi(nama),
+  getAll: async (...refs) => refs.map((r) => snapshot(r.path)),
   runTransaction: async (fn) => {
     const tx = {
       get: (r) => r.get(),
@@ -95,11 +104,14 @@ const Timestamp = {
     return { toDate: () => new Date(ms), toMillis: () => ms };
   },
 };
+const FieldValue = {
+  increment: (nilai) => ({ __increment: nilai }),
+};
 
 const asli = Module._load;
 Module._load = function (request, parent, ...rest) {
   if (request.endsWith("config/firebaseAdmin")) return { db };
-  if (request === "firebase-admin/firestore") return { Timestamp };
+  if (request === "firebase-admin/firestore") return { Timestamp, FieldValue };
   if (request.endsWith("services/permainanService")) return layananPermainan;
   return asli.call(this, request, parent, ...rest);
 };
@@ -259,6 +271,15 @@ test("leaderboard bawaan adalah harian, terurut, skor sama berbagi peringkat", a
   assert.strictEqual(r.body.data.tanggal, tanggalHariIni(sekarang));
   assert.deepStrictEqual(r.body.data.peringkat.map((p) => [p.uid, p.peringkat]), [["a", 1], ["b", 2], ["c", 2], ["d", 4]]);
   assert.strictEqual(r.body.data.saya.peringkat, 2);
+});
+
+test("leaderboard menampilkan nama terbaru dari profil pengguna", async () => {
+  isiHarian({ u1: 20 });
+  data.set("Users/u1", { nama: "Nama Baru" });
+
+  const r = await leaderboard({}, "u1");
+  assert.strictEqual(r.body.data.peringkat[0].nama, "Nama Baru");
+  assert.strictEqual(r.body.data.saya.nama, "Nama Baru");
 });
 
 test("leaderboard harian hari ini tidak memuat skor hari kemarin", async () => {
