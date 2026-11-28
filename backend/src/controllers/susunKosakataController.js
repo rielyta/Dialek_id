@@ -20,16 +20,60 @@ function acakHuruf(kata) {
 async function getSoal(req, res) {
   try {
     const dasar = db.collection("Kosakata").where("layakKuis", "==", true);
+    const uid = req.user.uid;
+    const [metadata, pengguna] = await Promise.all([
+      db.collection("KosakataMeta").doc("susunKosakata").get(),
+      db.collection("Users").doc(uid).get(),
+    ]);
 
-    const hitung = await dasar.count().get();
-    const total = hitung.data().count;
-    if (total === 0) {
-      return res.status(404).json({ error: "NotFound", message: "Data kosakata belum tersedia." });
+    const progres = Number.isSafeInteger(pengguna.data()?.kosakataPrioritasIndex)
+      && pengguna.data().kosakataPrioritasIndex >= 0
+      ? pengguna.data().kosakataPrioritasIndex
+      : 0;
+
+    let nomor;
+    let fieldNomor;
+    if (metadata.exists) {
+      const konfigurasi = metadata.data();
+      if (
+        !Number.isSafeInteger(konfigurasi.jumlahPrioritas)
+        || konfigurasi.jumlahPrioritas < 0
+        || !Number.isSafeInteger(konfigurasi.jumlahLain)
+        || konfigurasi.jumlahLain < 0
+      ) {
+        console.error("[susunKosakataController.getSoal] Metadata jumlah kuis tidak valid.");
+        return res.status(500).json({ error: "InternalServerError", message: "Metadata kosakata kuis tidak valid." });
+      }
+
+      const totalPrioritas = konfigurasi.jumlahPrioritas;
+      const totalLain = konfigurasi.jumlahLain;
+      if (progres < totalPrioritas) {
+        fieldNomor = "nomorKuisPrioritas";
+        nomor = progres;
+      } else if (totalLain > 0) {
+        fieldNomor = "nomorKuisLain";
+        nomor = Math.floor(Math.random() * totalLain);
+      } else if (totalPrioritas > 0) {
+        fieldNomor = "nomorKuisPrioritas";
+        nomor = Math.floor(Math.random() * totalPrioritas);
+      } else {
+        return res.status(404).json({ error: "NotFound", message: "Data kosakata belum tersedia." });
+      }
+    } else {
+      const hitungLama = await dasar.count().get();
+      const totalLama = hitungLama.data().count;
+      if (totalLama === 0) {
+        return res.status(404).json({ error: "NotFound", message: "Data kosakata belum tersedia." });
+      }
+      fieldNomor = "nomorKuis";
+      nomor = Math.floor(Math.random() * totalLama);
     }
 
-    const nomor = Math.floor(Math.random() * total);
-    let snap = await db.collection("Kosakata").where("nomorKuis", "==", nomor).limit(1).get();
-    if (snap.empty) snap = await dasar.limit(1).get();
+    const snap = await db.collection("Kosakata").where(fieldNomor, "==", nomor).limit(1).get();
+    if (snap.empty) {
+      console.error(`[susunKosakataController.getSoal] Nomor kuis ${fieldNomor}=${nomor} tidak ditemukan.`);
+      return res.status(500).json({ error: "InternalServerError", message: "Indeks kosakata kuis tidak lengkap." });
+    }
 
     const doc = snap.docs[0];
     const d = doc.data();
@@ -81,19 +125,34 @@ async function jawabSoal(req, res) {
     let tersimpan = true;
     try {
       const ref = db.collection("HasilSusunKosakata").doc();
-      await ref.set({
-        hasilId: ref.id,
-        uid,
-        kosakataId: doc.id,
-        skor: penilaian.skor,
-        diperbaruiPada: new Date().toISOString(),
-      });
+      const userRef = db.collection("Users").doc(uid);
+      const dataKosakata = doc.data();
+      await db.runTransaction(async (tx) => {
+        const pengguna = await tx.get(userRef);
+        const dataPengguna = pengguna.data() || {};
+        const progres = Number.isSafeInteger(dataPengguna.kosakataPrioritasIndex)
+          && dataPengguna.kosakataPrioritasIndex >= 0
+          ? dataPengguna.kosakataPrioritasIndex
+          : 0;
+        const pembaruan = {};
 
-      // Tambah EXP: +5 jika jawaban benar
-      if (penilaian.benar) {
-        const userRef = db.collection("Users").doc(uid);
-        await userRef.update({ expPoin: FieldValue.increment(5) });
-      }
+        if (penilaian.benar) {
+          pembaruan.expPoin = FieldValue.increment(5);
+          if (dataKosakata.prioritasPdf === true && dataKosakata.nomorKuisPrioritas === progres) {
+            pembaruan.kosakataPrioritasIndex = progres + 1;
+          }
+        }
+
+        tx.set(ref, {
+          hasilId: ref.id,
+          uid,
+          kosakataId: doc.id,
+          skor: penilaian.skor,
+          prioritasPdf: dataKosakata.prioritasPdf === true,
+          diperbaruiPada: new Date().toISOString(),
+        });
+        if (Object.keys(pembaruan).length > 0) tx.update(userRef, pembaruan);
+      });
     } catch (errSimpan) {
       console.error("[susunKosakataController.jawabSoal] gagal menyimpan hasil:", errSimpan);
       tersimpan = false;

@@ -1,10 +1,19 @@
 require("dotenv").config();
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { parse } = require("csv-parse/sync");
 
 const berkas = process.argv.find((a) => a.endsWith(".csv")) || path.join(__dirname, "..", "data", "kamus_batak_toba_bersih_rapi.csv");
 const dryRun = process.argv.includes("--dry");
+const pdfHeadwordHashes = new Set(
+  JSON.parse(fs.readFileSync(path.join(__dirname, "kamusBatakTobaPdfHeadwordHashes.json"), "utf-8")),
+);
+
+function hashHeadword(kataBatak) {
+  const normal = kataBatak.trim().toLowerCase().replace(/\s+/g, " ");
+  return crypto.createHash("sha256").update(normal).digest("hex").slice(0, 32);
+}
 
 function ambilGlos(definisi) {
   const awal = definisi.split(/[;,]/)[0].trim().toLowerCase();
@@ -39,6 +48,8 @@ function bentukDokumen(baris) {
   const hitung = {};
   const hasil = [];
   let nomor = 0;
+  let nomorPrioritas = 0;
+  let nomorLain = 0;
 
   for (const b of baris) {
     const kataBatak = (b.headword || "").trim().toLowerCase();
@@ -51,6 +62,7 @@ function bentukDokumen(baris) {
 
     const glos = ambilGlos(definisi);
     const kuis = layakKuis(kataBatak, glos, definisi);
+    const prioritasPdf = pdfHeadwordHashes.has(hashHeadword(kataBatak));
 
     const data = {
       kosakataId: id,
@@ -59,21 +71,31 @@ function bentukDokumen(baris) {
       definisi,
       kategori: (b.category || "").trim().toLowerCase(),
       layakKuis: kuis,
+      prioritasPdf,
     };
     if (kuis) {
       data.nomorKuis = nomor;
       nomor += 1;
+      if (prioritasPdf) {
+        data.nomorKuisPrioritas = nomorPrioritas;
+        nomorPrioritas += 1;
+      } else {
+        data.nomorKuisLain = nomorLain;
+        nomorLain += 1;
+      }
     }
     hasil.push({ id, data });
   }
-  return hasil;
+  return { dokumen: hasil, jumlahPrioritas: nomorPrioritas, jumlahLain: nomorLain };
 }
 
 async function main() {
-  const dokumen = bentukDokumen(bacaBaris());
+  const { dokumen, jumlahPrioritas, jumlahLain } = bentukDokumen(bacaBaris());
   const kuis = dokumen.filter((d) => d.data.layakKuis);
   console.log(`Total baris valid : ${dokumen.length}`);
   console.log(`Layak kuis        : ${kuis.length}`);
+  console.log(`Prioritas PDF     : ${jumlahPrioritas}`);
+  console.log(`Kosakata lainnya  : ${jumlahLain}`);
 
   if (dryRun) {
     console.log("Mode --dry: tidak menulis ke Firestore.");
@@ -97,6 +119,11 @@ async function main() {
     }
   }
   if (n > 0) await batch.commit();
+  await db.collection("KosakataMeta").doc("susunKosakata").set({
+    jumlahKuis: kuis.length,
+    jumlahPrioritas,
+    jumlahLain,
+  });
   console.log(`Selesai: ${total} dokumen masuk ke Kosakata.`);
 }
 
