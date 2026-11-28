@@ -1,11 +1,12 @@
 import {
   signInWithEmailAndPassword,
+  signInWithCustomToken,
   createUserWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
   signOut,
 } from "firebase/auth";
-import { auth, googleProvider, } from "./firebase";
+import { auth, googleProvider } from "./firebase";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -15,7 +16,7 @@ function getFriendlyErrorMessage(error) {
     case "auth/invalid-credential":
     case "auth/user-not-found":
     case "auth/wrong-password":
-      return "E-mail atau kata sandi salah.";
+      return "Username/e-mail atau kata sandi salah.";
     case "auth/email-already-in-use":
       return "E-mail sudah terdaftar. Silakan masuk.";
     case "auth/weak-password":
@@ -124,11 +125,42 @@ async function syncUserWithBackend(firebaseUser, extra = {}) {
   return createBackendProfile(token, nama, firebaseUser.email, extra.username);
 }
 
-export async function loginManual({ email, password }) {
+function isEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+async function loginWithUsername(username, password) {
+  const res = await fetch(`${API_BASE_URL}/api/akun/masuk`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const payload = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      return { success: false, message: "Username atau kata sandi salah." };
+    }
+    if (res.status === 429) {
+      return { success: false, message: "Terlalu banyak percobaan masuk. Coba lagi beberapa saat." };
+    }
+    return { success: false, message: payload.message || "Terjadi kesalahan saat masuk." };
+  }
+
+  const credential = await signInWithCustomToken(auth, payload.data.customToken);
+  const profile = await syncUserWithBackend(credential.user);
+  return { success: true, user: credential.user, profile };
+}
+
+export async function loginManual({ identifier, password }) {
   try {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
-    const profile = await syncUserWithBackend(credential.user);
-    return { success: true, user: credential.user, profile };
+    if (isEmail(identifier)) {
+      const credential = await signInWithEmailAndPassword(auth, identifier, password);
+      const profile = await syncUserWithBackend(credential.user);
+      return { success: true, user: credential.user, profile };
+    }
+    return await loginWithUsername(identifier, password);
   } catch (error) {
     return { success: false, message: getFriendlyErrorMessage(error) };
   }
