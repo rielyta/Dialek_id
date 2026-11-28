@@ -1,3 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Irish+Grover&family=Poppins:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.bg-custom-radial {
+  background: radial-gradient(circle at top left, #d8f3dc 0%, #f0fdf4 45%, #ffffff 100%);
+}
+
+.logo {
+  color: #0D4422;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.bg-shadow {
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid #000000;
+  border-radius: 2rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #0D4422 0%, #177B49 50%, #2D9D64 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.button-custom {
+  background-color: #177B49;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 9999px;
+  transition: opacity 0.3s ease;
+}
+
+.button-custom:hover {
+  opacity: 0.8;
+}
+
+.footer {
+  background-color: #0D4422;
+  color: #ffffff;
+  text-align: center;
+  font-size: 0.875rem;
+}
